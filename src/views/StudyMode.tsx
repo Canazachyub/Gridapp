@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, List, RotateCcw, Keyboard } from 'lucide-react';
-import type { Card } from '../types';
+import type { Card, ColumnConfig } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { useStudySession } from '../hooks/useStudySession';
 import { useStudyKeyboard } from '../hooks/useKeyboard';
@@ -22,6 +22,7 @@ export function StudyMode() {
   const { currentTopic, setView } = useApp();
 
   const [cards, setCards] = useState<Card[]>([]);
+  const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
   const [isIndexOpen, setIsIndexOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -41,7 +42,7 @@ export function StudyMode() {
     resetSession
   } = useStudySession(currentTopic, cards);
 
-  // Cargar cards
+  // Cargar cards y columnas desde la API
   useEffect(() => {
     async function loadCards() {
       if (!currentTopic) return;
@@ -50,13 +51,34 @@ export function StudyMode() {
       try {
         if (api.isConfigured()) {
           const response = await api.getCards(currentTopic.name);
-          setCards(response.cards);
+          console.log('=== DEBUG API Response ===');
+          console.log('Full response:', response);
+          console.log('Headers:', response.headers);
+          console.log('Headers count:', response.headers?.length);
+          console.log('Cards:', response.cards);
+          console.log('Cards count:', response.cards?.length);
+          console.log('First header:', response.headers?.[0]);
+          console.log('First card:', response.cards?.[0]);
+          console.log('=========================');
+
+          setCards(response.cards || []);
+
+          // Usar las columnas de la respuesta (headers reales de la hoja)
+          if (response.headers && response.headers.length > 0) {
+            console.log('Setting columns from headers:', response.headers.length);
+            setColumns(response.headers);
+          } else {
+            console.log('Fallback to topic columns:', currentTopic.columns?.length);
+            setColumns(currentTopic.columns || []);
+          }
         } else {
           setCards(currentTopic.cards || []);
+          setColumns(currentTopic.columns || []);
         }
       } catch (error) {
         console.error('Error loading cards:', error);
         setCards(currentTopic.cards || []);
+        setColumns(currentTopic.columns || []);
       } finally {
         setLoadingCards(false);
       }
@@ -111,7 +133,7 @@ export function StudyMode() {
     return <EmptyStudyState topicName={currentTopic.name} onBack={handleBack} />;
   }
 
-  const columns = currentTopic.columns;
+  // Usar las columnas del estado (cargadas de la API)
   const gridCols = getGridCols(columns.length);
 
   return (
@@ -188,18 +210,19 @@ export function StudyMode() {
           )}
           onClick={() => isIndexOpen && setIsIndexOpen(false)}
         >
-          {currentCard && (
+          {currentCard && columns.length > 0 && (
             <div className={cn('grid gap-4 md:gap-6 w-full max-w-6xl mx-auto', gridCols)}>
-              {columns.map(col => {
+              {columns.map((col, colIndex) => {
                 const cellContent = currentCard.cells[col.name] || '';
                 const isRevealed = revealedCells.has(col.name);
 
                 return (
                   <FlipCard
-                    key={`${currentCard.id}-${col.id}`}
+                    key={`card-${currentCard.id}-col-${colIndex}`}
                     label={col.name}
-                    type={col.type}
+                    type={col.type || 'text'}
                     content={cellContent}
+                    colorIndex={colIndex}
                     isRevealed={isRevealed}
                     onReveal={() => revealCell(col.name)}
                   />
