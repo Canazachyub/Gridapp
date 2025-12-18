@@ -1,0 +1,16 @@
+{
+  "name": "GridApp - Estudio Inteligente",
+  "short_name": "GridApp",
+  "description": "Sistema de estudio con tarjetas oclusivas conectado a Google Sheets",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
