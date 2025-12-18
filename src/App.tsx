@@ -1,4 +1,3 @@
-import React from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { Dashboard } from './views/Dashboard';
 import { TopicCreator } from './views/TopicCreator';

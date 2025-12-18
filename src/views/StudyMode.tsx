@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, List, RotateCcw, Keyboard } from 'lucide-react';
 import type { Card, ColumnConfig } from '../types';
 import { useApp } from '../contexts/AppContext';

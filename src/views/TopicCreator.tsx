@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, Plus, Trash2, Type, Image, Calculator, GripVertical } from 'lucide-react';
 import type { ColumnType } from '../types';
 import { useApp } from '../contexts/AppContext';

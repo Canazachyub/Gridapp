@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Save, Plus, Trash2, Image as ImageIcon, Eye } from 'lucide-react';
 import type { Card, ColumnConfig, CellData } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { api } from '../services/api';
-import { cn, generateId } from '../utils/helpers';
+import { cn } from '../utils/helpers';
 import { Button, IconButton } from '../components/ui/Button';
 import { Textarea } from '../components/ui/Input';
 import { Spinner } from '../components/ui/Spinner';
@@ -21,8 +21,7 @@ export function TopicEditor() {
     addCard,
     updateCard,
     deleteCard,
-    uploadImage,
-    isLoading
+    uploadImage
   } = useApp();
 
   const [cards, setCards] = useState<Card[]>([]);

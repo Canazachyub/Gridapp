@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw, Eye } from 'lucide-react';
 import { cn } from '../utils/helpers';
 import { ProgressBar } from './ui/Progress';

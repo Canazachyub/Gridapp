@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, Image as ImageIcon, Calculator, Sparkles } from 'lucide-react';
 import type { ColumnType } from '../types';
 import { cn } from '../utils/helpers';
@@ -188,7 +188,7 @@ export function FlipCard({
             {type === 'image' ? (
               <ImageContent content={content} />
             ) : type === 'formula' ? (
-              <FormulaContent content={content} colors={colors} />
+              <FormulaContent content={content} />
             ) : (
               <TextContent content={content} />
             )}
@@ -250,7 +250,7 @@ function ImageContent({ content }: { content: string }) {
   );
 }
 
-function FormulaContent({ content, colors }: { content: string; colors: typeof GOOGLE_COLORS[0] }) {
+function FormulaContent({ content }: { content: string }) {
   if (!content) {
     return (
       <div className="text-center">

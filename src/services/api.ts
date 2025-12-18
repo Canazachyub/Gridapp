@@ -68,7 +68,7 @@ async function apiGet<T>(action: string, params: Record<string, string> = {}): P
   return data.data;
 }
 
-async function apiPost<T>(action: string, payload: Record<string, unknown>): Promise<T> {
+async function apiPost<T>(action: string, payload: object): Promise<T> {
   const response = await fetchWithTimeout(GAS_URL, {
     method: 'POST',
     headers: {

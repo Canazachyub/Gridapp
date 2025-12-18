@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Plus,
   BookOpen,
@@ -7,7 +7,6 @@ import {
   Search,
   Moon,
   Sun,
-  Wifi,
   WifiOff,
   Cloud,
   CloudOff
@@ -189,7 +188,7 @@ interface TopicCardProps {
   onDelete: () => void;
 }
 
-function TopicCard({ topic, onStudy, onEdit, onDelete }: TopicCardProps) {
+function TopicCard({ topic, onStudy, onEdit }: TopicCardProps) {
   const progress = storage.getStudyProgress(topic.id);
   const progressPercent = progress?.completionPercentage || 0;
 

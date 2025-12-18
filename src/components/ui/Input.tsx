@@ -1,15 +1,15 @@
-import React from 'react';
+import type { InputHTMLAttributes, TextareaHTMLAttributes, ReactNode } from 'react';
 import { cn } from '../../utils/helpers';
 
 // ============================================================================
 // INPUT
 // ============================================================================
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
 }
 
 export function Input({
@@ -47,8 +47,8 @@ export function Input({
             'text-slate-900 dark:text-white',
             'placeholder:text-slate-400',
             'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
-            leftIcon && 'pl-10',
-            rightIcon && 'pr-10',
+            leftIcon ? 'pl-10' : '',
+            rightIcon ? 'pr-10' : '',
             error
               ? 'border-red-500 focus:ring-red-500'
               : 'border-slate-300 dark:border-slate-700',
@@ -73,7 +73,7 @@ export function Input({
 // TEXTAREA
 // ============================================================================
 
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
 }
