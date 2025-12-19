@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Plus,
   BookOpen,
@@ -9,17 +9,23 @@ import {
   Sun,
   WifiOff,
   Cloud,
-  CloudOff
+  CloudOff,
+  FolderPlus,
+  Folder,
+  ChevronDown,
+  X
 } from 'lucide-react';
-import type { Topic } from '../types';
+import type { Topic, Folder as FolderType } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { cn } from '../utils/helpers';
 import { Button, IconButton } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { TopicCardSkeleton } from '../components/ui/Spinner';
 import { CircularProgress } from '../components/ui/Progress';
-import { ConfirmModal } from '../components/ui/Modal';
+import { ConfirmModal, Modal } from '../components/ui/Modal';
 import { storage } from '../services/storage';
+import { FolderCard } from '../components/FolderCard';
+import { FolderView } from '../components/FolderView';
 
 // ============================================================================
 // COMPONENTE PRINCIPAL
@@ -35,12 +41,28 @@ export function Dashboard() {
     selectTopic,
     setView,
     deleteTopic,
-    toggleDarkMode
+    toggleDarkMode,
+    // Estado de carpetas
+    folders,
+    currentFolder,
+    uncategorizedTopics,
+    searchResults,
+    isSearching,
+    selectFolder,
+    createFolder,
+    deleteFolder,
+    assignTopicToFolder,
+    removeTopicFromFolder,
+    searchInFolder,
+    clearSearchResults
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Topic | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
   // Filtrar topics
   const filteredTopics = topics.filter(topic =>
@@ -68,6 +90,46 @@ export function Dashboard() {
     setIsDeleting(false);
     setDeleteTarget(null);
   };
+
+  // Manejar creación de carpeta
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+
+    setIsCreatingFolder(true);
+    await createFolder(newFolderName.trim());
+    setIsCreatingFolder(false);
+    setNewFolderName('');
+    setShowCreateFolder(false);
+  };
+
+  // Manejar selección de tema desde carpeta
+  const handleSelectTopicFromFolder = useCallback((topicName: string) => {
+    const topic = topics.find(t => t.name === topicName);
+    if (topic) {
+      selectTopic(topic);
+      setView('study');
+    }
+  }, [topics, selectTopic, setView]);
+
+  // Obtener la carpeta actual de un tema
+  const getTopicFolder = useCallback((topicName: string): FolderType | null => {
+    return folders.find(f => f.topics.some(t => t.name === topicName)) || null;
+  }, [folders]);
+
+  // Si hay una carpeta seleccionada, mostrar FolderView
+  if (currentFolder) {
+    return (
+      <FolderView
+        folder={currentFolder}
+        onBack={() => selectFolder(null)}
+        onSelectTopic={handleSelectTopicFromFolder}
+        searchResults={searchResults}
+        isSearching={isSearching}
+        onSearch={searchInFolder}
+        onClearSearch={clearSearchResults}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
@@ -126,40 +188,139 @@ export function Dashboard() {
             />
           </div>
 
-          {/* Boton crear */}
-          <Button
-            onClick={() => setView('creator')}
-            leftIcon={<Plus size={18} />}
-            className="whitespace-nowrap"
-          >
-            Crear Hoja
-          </Button>
+          {/* Botones de acción */}
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowCreateFolder(true)}
+              leftIcon={<FolderPlus size={18} />}
+              className="whitespace-nowrap"
+            >
+              Nueva Carpeta
+            </Button>
+            <Button
+              onClick={() => setView('creator')}
+              leftIcon={<Plus size={18} />}
+              className="whitespace-nowrap"
+            >
+              Crear Hoja
+            </Button>
+          </div>
         </div>
 
-        {/* Grid de topics */}
-        {isLoading && topics.length === 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <TopicCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : filteredTopics.length === 0 ? (
-          <EmptyState
-            hasSearch={searchQuery.length > 0}
-            onCreateClick={() => setView('creator')}
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredTopics.map(topic => (
-              <TopicCard
-                key={topic.id}
-                topic={topic}
-                onStudy={() => handleStudy(topic)}
-                onEdit={() => handleEdit(topic)}
-                onDelete={() => setDeleteTarget(topic)}
+        {/* Vista con búsqueda activa - mostrar todos los topics */}
+        {searchQuery ? (
+          <>
+            {filteredTopics.length === 0 ? (
+              <EmptyState
+                hasSearch={true}
+                onCreateClick={() => setView('creator')}
               />
-            ))}
-          </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredTopics.map(topic => (
+                  <TopicCard
+                    key={topic.id}
+                    topic={topic}
+                    onStudy={() => handleStudy(topic)}
+                    onEdit={() => handleEdit(topic)}
+                    onDelete={() => setDeleteTarget(topic)}
+                    folders={folders}
+                    currentFolder={getTopicFolder(topic.name)}
+                    onAssignToFolder={assignTopicToFolder}
+                    onRemoveFromFolder={removeTopicFromFolder}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Sección de Carpetas */}
+            {isLoading && folders.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                {[1, 2, 3].map(i => (
+                  <TopicCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : folders.length === 0 && uncategorizedTopics.length === 0 && topics.length === 0 ? (
+              <EmptyState
+                hasSearch={false}
+                onCreateClick={() => setView('creator')}
+              />
+            ) : (
+              <>
+                {/* Grid de carpetas */}
+                {folders.length > 0 && (
+                  <section className="mb-10">
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                      <FolderPlus className="w-5 h-5 text-primary-500" />
+                      Carpetas
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {folders.map((folder, idx) => (
+                        <FolderCard
+                          key={folder.id}
+                          folder={folder}
+                          colorIndex={idx}
+                          onSelect={selectFolder}
+                          onDelete={deleteFolder}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Sección Sin Categoría */}
+                {uncategorizedTopics.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-slate-400" />
+                      Sin Categoría
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {uncategorizedTopics.map(topicInfo => {
+                        const topic = topics.find(t => t.name === topicInfo.name);
+                        if (!topic) return null;
+                        return (
+                          <TopicCard
+                            key={topic.id}
+                            topic={topic}
+                            onStudy={() => handleStudy(topic)}
+                            onEdit={() => handleEdit(topic)}
+                            onDelete={() => setDeleteTarget(topic)}
+                            folders={folders}
+                            currentFolder={null}
+                            onAssignToFolder={assignTopicToFolder}
+                            onRemoveFromFolder={removeTopicFromFolder}
+                          />
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {/* Si no hay carpetas ni sin categoría pero sí temas (fallback) */}
+                {folders.length === 0 && uncategorizedTopics.length === 0 && topics.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {topics.map(topic => (
+                      <TopicCard
+                        key={topic.id}
+                        topic={topic}
+                        onStudy={() => handleStudy(topic)}
+                        onEdit={() => handleEdit(topic)}
+                        onDelete={() => setDeleteTarget(topic)}
+                        folders={folders}
+                        currentFolder={getTopicFolder(topic.name)}
+                        onAssignToFolder={assignTopicToFolder}
+                        onRemoveFromFolder={removeTopicFromFolder}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </main>
 
@@ -173,6 +334,45 @@ export function Dashboard() {
         confirmText="Eliminar"
         isLoading={isDeleting}
       />
+
+      {/* Modal para crear carpeta */}
+      <Modal
+        isOpen={showCreateFolder}
+        onClose={() => {
+          setShowCreateFolder(false);
+          setNewFolderName('');
+        }}
+        title="Nueva Carpeta"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Nombre de la carpeta"
+            placeholder="Ej: Razonamiento Verbal"
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowCreateFolder(false);
+                setNewFolderName('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateFolder}
+              isLoading={isCreatingFolder}
+              disabled={!newFolderName.trim()}
+            >
+              Crear
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }
@@ -186,11 +386,44 @@ interface TopicCardProps {
   onStudy: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  folders: FolderType[];
+  currentFolder: FolderType | null;
+  onAssignToFolder: (topicName: string, folderId: string, folderName: string) => Promise<boolean>;
+  onRemoveFromFolder?: (topicName: string) => Promise<boolean>;
 }
 
-function TopicCard({ topic, onStudy, onEdit }: TopicCardProps) {
+function TopicCard({
+  topic,
+  onStudy,
+  onEdit,
+  folders,
+  currentFolder,
+  onAssignToFolder,
+  onRemoveFromFolder
+}: TopicCardProps) {
   const progress = storage.getStudyProgress(topic.id);
   const progressPercent = progress?.completionPercentage || 0;
+  const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowFolderDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleAssign = async (folder: FolderType) => {
+    setIsAssigning(true);
+    await onAssignToFolder(topic.name, folder.id, folder.name);
+    setIsAssigning(false);
+    setShowFolderDropdown(false);
+  };
 
   return (
     <div
@@ -232,7 +465,7 @@ function TopicCard({ topic, onStudy, onEdit }: TopicCardProps) {
       </h3>
 
       {/* Info */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
           {topic.cardCount} tarjetas
         </span>
@@ -241,8 +474,102 @@ function TopicCard({ topic, onStudy, onEdit }: TopicCardProps) {
         </span>
       </div>
 
+      {/* Selector de carpeta - MÁS VISIBLE Y ACCESIBLE */}
+      <div className="relative mb-4" ref={dropdownRef}>
+        <button
+          onClick={() => setShowFolderDropdown(!showFolderDropdown)}
+          disabled={isAssigning || folders.length === 0}
+          className={cn(
+            'w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl',
+            'text-sm font-medium transition-all',
+            currentFolder
+              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-2 border-primary-200 dark:border-primary-800'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600',
+            folders.length === 0 && 'opacity-50 cursor-not-allowed'
+          )}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Folder className={cn(
+              'w-4 h-4 flex-shrink-0',
+              currentFolder ? 'text-primary-500' : 'text-slate-400'
+            )} />
+            <span className="truncate">
+              {folders.length === 0
+                ? 'Sin carpetas'
+                : currentFolder
+                  ? currentFolder.name
+                  : 'Mover a carpeta...'}
+            </span>
+          </div>
+          <ChevronDown className={cn(
+            'w-4 h-4 flex-shrink-0 transition-transform',
+            showFolderDropdown && 'rotate-180'
+          )} />
+        </button>
+
+        {/* Dropdown de carpetas */}
+        {showFolderDropdown && folders.length > 0 && (
+          <div className={cn(
+            'absolute left-0 right-0 top-full mt-1 z-20',
+            'bg-white dark:bg-slate-800',
+            'border border-slate-200 dark:border-slate-700',
+            'rounded-xl shadow-xl',
+            'py-1 max-h-48 overflow-y-auto'
+          )}>
+            {/* Opción para quitar de carpeta */}
+            {currentFolder && onRemoveFromFolder && (
+              <button
+                onClick={async () => {
+                  setIsAssigning(true);
+                  await onRemoveFromFolder(topic.name);
+                  setIsAssigning(false);
+                  setShowFolderDropdown(false);
+                }}
+                disabled={isAssigning}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm',
+                  'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20',
+                  'border-b border-slate-100 dark:border-slate-700',
+                  isAssigning && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <X className="w-4 h-4" />
+                Quitar de {currentFolder.name}
+              </button>
+            )}
+
+            {/* Lista de carpetas */}
+            {folders.map((folder) => (
+              <button
+                key={folder.id}
+                onClick={() => handleAssign(folder)}
+                disabled={isAssigning || currentFolder?.id === folder.id}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm',
+                  'hover:bg-slate-50 dark:hover:bg-slate-700',
+                  'transition-colors',
+                  currentFolder?.id === folder.id && 'bg-primary-50 dark:bg-primary-900/30 text-primary-600',
+                  isAssigning && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <Folder className={cn(
+                  'w-4 h-4 flex-shrink-0',
+                  currentFolder?.id === folder.id ? 'text-primary-500' : 'text-slate-400'
+                )} />
+                <span className="flex-1 truncate text-slate-700 dark:text-slate-200">
+                  {folder.name}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {folder.topicCount}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Columnas preview */}
-      <div className="flex flex-wrap gap-1 mb-6">
+      <div className="flex flex-wrap gap-1 mb-4">
         {topic.columns.slice(0, 3).map(col => (
           <span
             key={col.id}

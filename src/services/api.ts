@@ -9,7 +9,10 @@ import type {
   DeleteCardPayload,
   UploadImagePayload,
   UploadResponse,
-  ColumnConfig
+  ColumnConfig,
+  Folder,
+  FoldersResponse,
+  SearchResponse
 } from '../types';
 
 // ============================================================================
@@ -162,6 +165,47 @@ export async function syncData(topics: Topic[]): Promise<{ topic: string; status
 }
 
 // ============================================================================
+// API DE CARPETAS
+// ============================================================================
+
+export async function getFolders(): Promise<FoldersResponse> {
+  return apiGet<FoldersResponse>('getFolders');
+}
+
+export async function createFolder(name: string): Promise<Folder> {
+  return apiPost<Folder>('createFolder', { folderName: name });
+}
+
+export async function deleteFolder(folderId: string): Promise<{ deleted: string }> {
+  return apiPost<{ deleted: string }>('deleteFolder', { folderId });
+}
+
+export async function assignTopicToFolder(
+  topicName: string,
+  folderId: string,
+  folderName: string
+): Promise<{ topicName: string; folderId: string }> {
+  return apiPost<{ topicName: string; folderId: string }>('assignTopicToFolder', {
+    topicName,
+    folderId,
+    folderName
+  });
+}
+
+export async function removeTopicFromFolder(
+  topicName: string
+): Promise<{ removed: string }> {
+  return apiPost<{ removed: string }>('removeTopicFromFolder', { topicName });
+}
+
+export async function searchInFolder(
+  folderId: string,
+  query: string
+): Promise<SearchResponse> {
+  return apiGet<SearchResponse>('searchInFolder', { folderId, query });
+}
+
+// ============================================================================
 // UTILIDADES
 // ============================================================================
 
@@ -199,6 +243,13 @@ export const api = {
   updateTopicConfig,
   // Sync
   syncData,
+  // Carpetas
+  getFolders,
+  createFolder,
+  deleteFolder,
+  assignTopicToFolder,
+  removeTopicFromFolder,
+  searchInFolder,
   // Utils
   ping,
   isConfigured

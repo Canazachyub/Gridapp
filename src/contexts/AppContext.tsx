@@ -7,7 +7,10 @@ import type {
   AddCardPayload,
   UpdateCardPayload,
   DeleteCardPayload,
-  UploadImagePayload
+  UploadImagePayload,
+  Folder,
+  FolderTopic,
+  SearchResult
 } from '../types';
 import { api } from '../services/api';
 import { storage } from '../services/storage';
@@ -25,6 +28,12 @@ interface AppContextType {
   isLoading: boolean;
   error: string | null;
   isDarkMode: boolean;
+  // Estado de carpetas
+  folders: Folder[];
+  currentFolder: Folder | null;
+  uncategorizedTopics: FolderTopic[];
+  searchResults: SearchResult[];
+  isSearching: boolean;
 
   // Acciones
   loadTopics: () => Promise<void>;
@@ -39,6 +48,15 @@ interface AppContextType {
   toggleDarkMode: () => void;
   clearError: () => void;
   refreshCurrentTopic: () => Promise<void>;
+  // Acciones de carpetas
+  loadFolders: () => Promise<void>;
+  selectFolder: (folder: Folder | null) => void;
+  createFolder: (name: string) => Promise<boolean>;
+  deleteFolder: (folderId: string) => Promise<boolean>;
+  assignTopicToFolder: (topicName: string, folderId: string, folderName: string) => Promise<boolean>;
+  removeTopicFromFolder: (topicName: string) => Promise<boolean>;
+  searchInFolder: (query: string) => Promise<void>;
+  clearSearchResults: () => void;
 }
 
 // ============================================================================
@@ -67,6 +85,12 @@ export function AppProvider({ children }: AppProviderProps) {
     const settings = storage.getSettings();
     return settings.darkMode;
   });
+  // Estado de carpetas
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const [uncategorizedTopics, setUncategorizedTopics] = useState<FolderTopic[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Aplicar modo oscuro al documento
   useEffect(() => {
@@ -304,12 +328,143 @@ export function AppProvider({ children }: AppProviderProps) {
     }
   }, [currentTopic]);
 
+  // ============================================================================
+  // ACCIONES DE CARPETAS
+  // ============================================================================
+
+  // Cargar carpetas
+  const loadFolders = useCallback(async () => {
+    if (!api.isConfigured()) return;
+
+    try {
+      const response = await api.getFolders();
+      setFolders(response.folders);
+      setUncategorizedTopics(response.uncategorized);
+    } catch (err) {
+      console.error('Error loading folders:', err);
+    }
+  }, []);
+
+  // Seleccionar carpeta
+  const selectFolder = useCallback((folder: Folder | null) => {
+    setCurrentFolder(folder);
+    setSearchResults([]);
+  }, []);
+
+  // Crear carpeta
+  const createFolderAction = useCallback(async (name: string): Promise<boolean> => {
+    setError(null);
+
+    try {
+      if (api.isConfigured()) {
+        const newFolder = await api.createFolder(name);
+        setFolders(prev => [...prev, newFolder]);
+      }
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error creating folder';
+      setError(message);
+      return false;
+    }
+  }, []);
+
+  // Eliminar carpeta
+  const deleteFolderAction = useCallback(async (folderId: string): Promise<boolean> => {
+    setError(null);
+
+    try {
+      if (api.isConfigured()) {
+        await api.deleteFolder(folderId);
+        setFolders(prev => prev.filter(f => f.id !== folderId));
+        // Recargar para obtener temas sin categorizar actualizados
+        await loadFolders();
+      }
+
+      if (currentFolder?.id === folderId) {
+        setCurrentFolder(null);
+      }
+
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error deleting folder';
+      setError(message);
+      return false;
+    }
+  }, [currentFolder, loadFolders]);
+
+  // Asignar tema a carpeta
+  const assignTopicToFolderAction = useCallback(async (
+    topicName: string,
+    folderId: string,
+    folderName: string
+  ): Promise<boolean> => {
+    setError(null);
+
+    try {
+      if (api.isConfigured()) {
+        await api.assignTopicToFolder(topicName, folderId, folderName);
+        await loadFolders();
+      }
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error assigning topic to folder';
+      setError(message);
+      return false;
+    }
+  }, [loadFolders]);
+
+  // Remover tema de carpeta
+  const removeTopicFromFolderAction = useCallback(async (topicName: string): Promise<boolean> => {
+    setError(null);
+
+    try {
+      if (api.isConfigured()) {
+        await api.removeTopicFromFolder(topicName);
+        await loadFolders();
+      }
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error removing topic from folder';
+      setError(message);
+      return false;
+    }
+  }, [loadFolders]);
+
+  // Buscar en carpeta
+  const searchInFolderAction = useCallback(async (query: string): Promise<void> => {
+    if (!currentFolder || !api.isConfigured() || !query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      const response = await api.searchInFolder(currentFolder.id, query);
+      setSearchResults(response.results);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error searching in folder';
+      setError(message);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [currentFolder]);
+
+  // Limpiar resultados de búsqueda
+  const clearSearchResults = useCallback(() => {
+    setSearchResults([]);
+  }, []);
+
   // Cargar al iniciar
   useEffect(() => {
     loadTopics();
-  }, [loadTopics]);
+    loadFolders();
+  }, [loadTopics, loadFolders]);
 
   const value: AppContextType = {
+    // Estado
     topics,
     currentTopic,
     currentView,
@@ -317,6 +472,13 @@ export function AppProvider({ children }: AppProviderProps) {
     isLoading,
     error,
     isDarkMode,
+    // Estado de carpetas
+    folders,
+    currentFolder,
+    uncategorizedTopics,
+    searchResults,
+    isSearching,
+    // Acciones
     loadTopics,
     selectTopic,
     setView,
@@ -328,7 +490,16 @@ export function AppProvider({ children }: AppProviderProps) {
     uploadImage,
     toggleDarkMode,
     clearError,
-    refreshCurrentTopic
+    refreshCurrentTopic,
+    // Acciones de carpetas
+    loadFolders,
+    selectFolder,
+    createFolder: createFolderAction,
+    deleteFolder: deleteFolderAction,
+    assignTopicToFolder: assignTopicToFolderAction,
+    removeTopicFromFolder: removeTopicFromFolderAction,
+    searchInFolder: searchInFolderAction,
+    clearSearchResults
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

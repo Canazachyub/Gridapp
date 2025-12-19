@@ -23,8 +23,11 @@ const CONFIG = {
   // Nombre de la hoja de configuracion
   CONFIG_SHEET_NAME: '_config',
 
+  // Nombre de la hoja de carpetas
+  FOLDERS_SHEET_NAME: '_folders',
+
   // Version de la API
-  API_VERSION: '1.0.0'
+  API_VERSION: '1.1.0'
 };
 
 // ============================================================================
@@ -104,6 +107,17 @@ function doGet(e) {
         }
         return getTopicConfig(configTopic);
 
+      case 'getFolders':
+        return getFolders();
+
+      case 'searchInFolder':
+        const searchFolderId = e.parameter.folderId;
+        const searchQuery = e.parameter.query;
+        if (!searchQuery) {
+          return errorResponse('Parameter "query" is required', 400);
+        }
+        return searchInFolder(searchFolderId, searchQuery);
+
       default:
         return errorResponse('Unknown action: ' + action, 404);
     }
@@ -153,6 +167,18 @@ function doPost(e) {
 
       case 'syncData':
         return syncData(payload);
+
+      case 'createFolder':
+        return createFolder(payload);
+
+      case 'deleteFolder':
+        return deleteFolder(payload.folderId);
+
+      case 'assignTopicToFolder':
+        return assignTopicToFolder(payload);
+
+      case 'removeTopicFromFolder':
+        return removeTopicFromFolder(payload.topicName);
 
       default:
         return errorResponse('Unknown action: ' + action, 404);
@@ -732,4 +758,339 @@ function testConnection() {
   } catch (error) {
     return errorResponse('Connection failed: ' + error.message, 500);
   }
+}
+
+// ============================================================================
+// FUNCIONES DE CARPETAS (FOLDERS)
+// ============================================================================
+
+/**
+ * Asegurar que existe la hoja de carpetas
+ */
+function ensureFoldersSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let foldersSheet = ss.getSheetByName(CONFIG.FOLDERS_SHEET_NAME);
+
+  if (!foldersSheet) {
+    foldersSheet = ss.insertSheet(CONFIG.FOLDERS_SHEET_NAME);
+
+    // Agregar headers
+    foldersSheet.getRange(1, 1, 1, 3).setValues([
+      ['folder_id', 'folder_name', 'topic_name']
+    ]);
+
+    // Formatear
+    const headerRange = foldersSheet.getRange(1, 1, 1, 3);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#7C3AED');
+    headerRange.setFontColor('#FFFFFF');
+  }
+
+  return foldersSheet;
+}
+
+/**
+ * Obtener todas las carpetas con sus temas
+ */
+function getFolders() {
+  const foldersSheet = ensureFoldersSheet();
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
+  const lastRow = foldersSheet.getLastRow();
+
+  // Estructura para carpetas
+  const foldersMap = {};
+
+  // Leer asignaciones de carpetas
+  if (lastRow > 1) {
+    const data = foldersSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+
+    data.forEach(row => {
+      const folderId = row[0];
+      const folderName = row[1];
+      const topicName = row[2];
+
+      if (!foldersMap[folderId]) {
+        foldersMap[folderId] = {
+          id: folderId,
+          name: folderName,
+          topics: []
+        };
+      }
+
+      foldersMap[folderId].topics.push(topicName);
+    });
+  }
+
+  // Obtener todos los temas para contar cards
+  const sheets = ss.getSheets();
+  const topicCards = {};
+
+  sheets.forEach(sheet => {
+    const name = sheet.getName();
+    if (name.startsWith('_')) return;
+    topicCards[name] = Math.max(0, sheet.getLastRow() - 1);
+  });
+
+  // Construir respuesta de carpetas
+  const folders = Object.values(foldersMap).map(folder => ({
+    id: folder.id,
+    name: folder.name,
+    topicCount: folder.topics.length,
+    topics: folder.topics.map(topicName => ({
+      name: topicName,
+      cardCount: topicCards[topicName] || 0
+    }))
+  }));
+
+  // Obtener temas sin carpeta
+  const assignedTopics = new Set();
+  Object.values(foldersMap).forEach(folder => {
+    folder.topics.forEach(t => assignedTopics.add(t));
+  });
+
+  const uncategorizedTopics = [];
+  sheets.forEach(sheet => {
+    const name = sheet.getName();
+    if (name.startsWith('_')) return;
+    if (!assignedTopics.has(name)) {
+      uncategorizedTopics.push({
+        name: name,
+        cardCount: topicCards[name] || 0
+      });
+    }
+  });
+
+  return successResponse({
+    folders: folders,
+    uncategorized: uncategorizedTopics
+  }, 'Folders retrieved successfully');
+}
+
+/**
+ * Crear nueva carpeta
+ */
+function createFolder(payload) {
+  const { folderName } = payload;
+
+  if (!folderName) {
+    return errorResponse('Folder name is required', 400);
+  }
+
+  const foldersSheet = ensureFoldersSheet();
+
+  // Generar ID unico
+  const folderId = folderName.toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .substring(0, 20);
+
+  // Verificar si ya existe
+  const lastRow = foldersSheet.getLastRow();
+  if (lastRow > 1) {
+    const existingIds = foldersSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < existingIds.length; i++) {
+      if (existingIds[i][0] === folderId) {
+        return errorResponse('Folder already exists', 409);
+      }
+    }
+  }
+
+  // Crear entrada placeholder (carpeta vacia)
+  // La carpeta se crea realmente cuando se le asigna un tema
+
+  return successResponse({
+    id: folderId,
+    name: folderName,
+    topicCount: 0,
+    topics: []
+  }, 'Folder created successfully');
+}
+
+/**
+ * Eliminar carpeta (los temas pasan a sin categoria)
+ */
+function deleteFolder(folderId) {
+  if (!folderId) {
+    return errorResponse('Folder ID is required', 400);
+  }
+
+  const foldersSheet = ensureFoldersSheet();
+  const lastRow = foldersSheet.getLastRow();
+
+  if (lastRow <= 1) {
+    return errorResponse('Folder not found', 404);
+  }
+
+  // Eliminar todas las filas de esta carpeta (de abajo hacia arriba)
+  const data = foldersSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  let deleted = 0;
+
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (data[i][0] === folderId) {
+      foldersSheet.deleteRow(i + 2);
+      deleted++;
+    }
+  }
+
+  if (deleted === 0) {
+    return errorResponse('Folder not found', 404);
+  }
+
+  return successResponse({
+    deleted: folderId,
+    topicsRemoved: deleted
+  }, 'Folder deleted successfully');
+}
+
+/**
+ * Asignar tema a carpeta
+ */
+function assignTopicToFolder(payload) {
+  const { topicName, folderId, folderName } = payload;
+
+  if (!topicName || !folderId || !folderName) {
+    return errorResponse('Topic name, folder ID and folder name are required', 400);
+  }
+
+  // Verificar que el tema existe
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(topicName);
+
+  if (!sheet) {
+    return errorResponse('Topic not found: ' + topicName, 404);
+  }
+
+  const foldersSheet = ensureFoldersSheet();
+
+  // Primero eliminar cualquier asignacion existente de este tema
+  removeTopicFromFolderInternal(topicName);
+
+  // Agregar nueva asignacion
+  foldersSheet.appendRow([folderId, folderName, topicName]);
+
+  return successResponse({
+    topicName: topicName,
+    folderId: folderId,
+    folderName: folderName
+  }, 'Topic assigned to folder successfully');
+}
+
+/**
+ * Remover tema de su carpeta (interno)
+ */
+function removeTopicFromFolderInternal(topicName) {
+  const foldersSheet = ensureFoldersSheet();
+  const lastRow = foldersSheet.getLastRow();
+
+  if (lastRow <= 1) return;
+
+  const data = foldersSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (data[i][2] === topicName) {
+      foldersSheet.deleteRow(i + 2);
+    }
+  }
+}
+
+/**
+ * Remover tema de carpeta (endpoint)
+ */
+function removeTopicFromFolder(topicName) {
+  if (!topicName) {
+    return errorResponse('Topic name is required', 400);
+  }
+
+  removeTopicFromFolderInternal(topicName);
+
+  return successResponse({
+    topicName: topicName
+  }, 'Topic removed from folder successfully');
+}
+
+/**
+ * Buscar en primera columna de todos los temas de una carpeta
+ */
+function searchInFolder(folderId, query) {
+  if (!query || query.length < 2) {
+    return errorResponse('Query must be at least 2 characters', 400);
+  }
+
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const foldersSheet = ensureFoldersSheet();
+  const searchLower = query.toLowerCase();
+
+  // Obtener temas de la carpeta (o todos si no hay folderId)
+  let topicsToSearch = [];
+
+  if (folderId) {
+    const lastRow = foldersSheet.getLastRow();
+    if (lastRow > 1) {
+      const data = foldersSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+      data.forEach(row => {
+        if (row[0] === folderId) {
+          topicsToSearch.push(row[2]); // topic_name
+        }
+      });
+    }
+  } else {
+    // Buscar en todos los temas sin carpeta
+    const sheets = ss.getSheets();
+    const assignedTopics = new Set();
+
+    const lastRow = foldersSheet.getLastRow();
+    if (lastRow > 1) {
+      const data = foldersSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+      data.forEach(row => assignedTopics.add(row[2]));
+    }
+
+    sheets.forEach(sheet => {
+      const name = sheet.getName();
+      if (!name.startsWith('_') && !assignedTopics.has(name)) {
+        topicsToSearch.push(name);
+      }
+    });
+  }
+
+  // Buscar en cada tema
+  const results = [];
+
+  topicsToSearch.forEach(topicName => {
+    const sheet = ss.getSheetByName(topicName);
+    if (!sheet) return;
+
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+
+    if (lastRow < 2 || lastCol < 1) return;
+
+    // Obtener solo primera columna (indice)
+    const firstColData = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    const header = sheet.getRange(1, 1).getValue();
+
+    firstColData.forEach((row, index) => {
+      const cellValue = String(row[0]).toLowerCase();
+      if (cellValue.includes(searchLower)) {
+        results.push({
+          topicName: topicName,
+          cardId: index + 2, // Fila real
+          cardIndex: index,
+          columnName: header,
+          value: row[0],
+          matchIndex: cellValue.indexOf(searchLower)
+        });
+      }
+    });
+  });
+
+  // Ordenar por relevancia (posicion del match)
+  results.sort((a, b) => a.matchIndex - b.matchIndex);
+
+  return successResponse({
+    query: query,
+    folderId: folderId,
+    totalResults: results.length,
+    results: results.slice(0, 50) // Limitar a 50 resultados
+  }, 'Search completed');
 }

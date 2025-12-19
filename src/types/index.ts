@@ -35,9 +35,49 @@ export interface Topic {
   cardCount: number;
   columns: ColumnConfig[];
   lastModified?: string;
+  // Datos de carpeta
+  folderId?: string;
+  folderName?: string;
   // Datos locales
   cards?: Card[];
   progress?: StudyProgress;
+}
+
+// ============================================================================
+// CARPETAS (FOLDERS)
+// ============================================================================
+
+export interface FolderTopic {
+  name: string;
+  cardCount: number;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  topicCount: number;
+  topics: FolderTopic[];
+}
+
+export interface FoldersResponse {
+  folders: Folder[];
+  uncategorized: FolderTopic[];
+}
+
+export interface SearchResult {
+  topicName: string;
+  cardId: number;
+  cardIndex: number;
+  columnName: string;
+  value: string;
+  matchIndex: number;
+}
+
+export interface SearchResponse {
+  query: string;
+  folderId: string | null;
+  totalResults: number;
+  results: SearchResult[];
 }
 
 // ============================================================================
