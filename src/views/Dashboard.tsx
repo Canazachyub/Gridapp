@@ -135,36 +135,36 @@ export function Dashboard() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             {/* Logo y titulo */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
-                <BookOpen className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+                <h1 className="text-base sm:text-xl font-bold text-slate-900 dark:text-white">
                   GridApp
                 </h1>
-                <p className="text-xs text-slate-500">Estudio inteligente</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 hidden sm:block">Estudio inteligente</p>
               </div>
             </div>
 
             {/* Acciones del header */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Indicador de sync */}
               <SyncIndicator status={syncStatus} />
 
               {/* Toggle dark mode */}
               <IconButton
-                icon={isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                icon={isDarkMode ? <Sun size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Moon size={16} className="sm:w-[18px] sm:h-[18px]" />}
                 onClick={toggleDarkMode}
                 label={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
               />
 
               {/* Refrescar */}
               <IconButton
-                icon={<RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />}
+                icon={<RefreshCw size={16} className={cn("sm:w-[18px] sm:h-[18px]", isLoading && 'animate-spin')} />}
                 onClick={loadTopics}
                 label="Refrescar"
                 disabled={isLoading}
@@ -175,16 +175,16 @@ export function Dashboard() {
       </header>
 
       {/* Contenido principal */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Barra de acciones */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
           {/* Busqueda */}
           <div className="flex-1">
             <Input
               placeholder="Buscar temas..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              leftIcon={<Search size={18} />}
+              leftIcon={<Search size={16} className="sm:w-[18px] sm:h-[18px]" />}
             />
           </div>
 
@@ -193,17 +193,19 @@ export function Dashboard() {
             <Button
               variant="secondary"
               onClick={() => setShowCreateFolder(true)}
-              leftIcon={<FolderPlus size={18} />}
-              className="whitespace-nowrap"
+              leftIcon={<FolderPlus size={16} className="sm:w-[18px] sm:h-[18px]" />}
+              className="flex-1 sm:flex-none text-sm sm:text-base"
             >
-              Nueva Carpeta
+              <span className="hidden sm:inline">Nueva Carpeta</span>
+              <span className="sm:hidden">Carpeta</span>
             </Button>
             <Button
               onClick={() => setView('creator')}
-              leftIcon={<Plus size={18} />}
-              className="whitespace-nowrap"
+              leftIcon={<Plus size={16} className="sm:w-[18px] sm:h-[18px]" />}
+              className="flex-1 sm:flex-none text-sm sm:text-base"
             >
-              Crear Hoja
+              <span className="hidden sm:inline">Crear Hoja</span>
+              <span className="sm:hidden">Nueva</span>
             </Button>
           </div>
         </div>
@@ -217,7 +219,7 @@ export function Dashboard() {
                 onCreateClick={() => setView('creator')}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredTopics.map(topic => (
                   <TopicCard
                     key={topic.id}
@@ -238,7 +240,7 @@ export function Dashboard() {
           <>
             {/* Sección de Carpetas */}
             {isLoading && folders.length === 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 {[1, 2, 3].map(i => (
                   <TopicCardSkeleton key={i} />
                 ))}
@@ -252,12 +254,12 @@ export function Dashboard() {
               <>
                 {/* Grid de carpetas */}
                 {folders.length > 0 && (
-                  <section className="mb-10">
-                    <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                      <FolderPlus className="w-5 h-5 text-primary-500" />
+                  <section className="mb-8 sm:mb-10">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
+                      <FolderPlus className="w-4 h-4 sm:w-5 sm:h-5 text-primary-500" />
                       Carpetas
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {folders.map((folder, idx) => (
                         <FolderCard
                           key={folder.id}
@@ -274,11 +276,11 @@ export function Dashboard() {
                 {/* Sección Sin Categoría */}
                 {uncategorizedTopics.length > 0 && (
                   <section>
-                    <h2 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-slate-400" />
+                    <h2 className="text-base sm:text-lg font-bold text-slate-700 dark:text-slate-300 mb-3 sm:mb-4 flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                       Sin Categoría
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {uncategorizedTopics.map(topicInfo => {
                         const topic = topics.find(t => t.name === topicInfo.name);
                         if (!topic) return null;
@@ -302,7 +304,7 @@ export function Dashboard() {
 
                 {/* Si no hay carpetas ni sin categoría pero sí temas (fallback) */}
                 {folders.length === 0 && uncategorizedTopics.length === 0 && topics.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {topics.map(topic => (
                       <TopicCard
                         key={topic.id}
@@ -428,7 +430,7 @@ function TopicCard({
   return (
     <div
       className={cn(
-        'bg-white dark:bg-slate-900 rounded-2xl p-6',
+        'bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl p-4 sm:p-6',
         'shadow-sm hover:shadow-xl',
         'border border-slate-200 dark:border-slate-800',
         'hover:border-primary-200 dark:hover:border-primary-900',
@@ -437,22 +439,22 @@ function TopicCard({
       )}
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-3 sm:mb-4">
         <div
           className={cn(
-            'p-3 rounded-xl transition-colors',
+            'p-2 sm:p-3 rounded-lg sm:rounded-xl transition-colors',
             'bg-primary-50 dark:bg-primary-900/20',
             'group-hover:bg-primary-100 dark:group-hover:bg-primary-900/40'
           )}
         >
-          <BookOpen className="text-primary-600 dark:text-primary-400" size={24} />
+          <BookOpen className="text-primary-600 dark:text-primary-400 w-5 h-5 sm:w-6 sm:h-6" />
         </div>
 
         {progressPercent > 0 && (
           <CircularProgress
             value={progressPercent}
-            size={44}
-            strokeWidth={4}
+            size={36}
+            strokeWidth={3}
             showLabel={true}
             variant={progressPercent === 100 ? 'success' : 'primary'}
           />
@@ -460,28 +462,28 @@ function TopicCard({
       </div>
 
       {/* Titulo */}
-      <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-1">
+      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5 sm:mb-2 line-clamp-1">
         {topic.name}
       </h3>
 
       {/* Info */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-2.5 sm:mb-3">
+        <span className="text-[10px] sm:text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
           {topic.cardCount} tarjetas
         </span>
-        <span className="text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+        <span className="text-[10px] sm:text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
           {topic.columns.length} columnas
         </span>
       </div>
 
       {/* Selector de carpeta - MÁS VISIBLE Y ACCESIBLE */}
-      <div className="relative mb-4" ref={dropdownRef}>
+      <div className="relative mb-3 sm:mb-4" ref={dropdownRef}>
         <button
           onClick={() => setShowFolderDropdown(!showFolderDropdown)}
           disabled={isAssigning || folders.length === 0}
           className={cn(
-            'w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl',
-            'text-sm font-medium transition-all',
+            'w-full flex items-center justify-between gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl',
+            'text-xs sm:text-sm font-medium transition-all',
             currentFolder
               ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-2 border-primary-200 dark:border-primary-800'
               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-600',
