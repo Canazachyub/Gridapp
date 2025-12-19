@@ -37,6 +37,21 @@ export function useStudySession(topic: Topic | null, cards: Card[]): UseStudySes
   const currentCard = cards[currentIndex] || null;
   const isComplete = viewedCards.size === totalCards && totalCards > 0;
 
+  // Helper: obtener set con primera columna revelada
+  const getFirstColumnRevealed = useCallback((): Set<string> => {
+    if (topic && topic.columns.length > 0) {
+      return new Set([topic.columns[0].name]);
+    }
+    return new Set();
+  }, [topic]);
+
+  // Revelar primera columna al iniciar o cambiar de tema
+  useEffect(() => {
+    if (topic && topic.columns.length > 0 && revealedCells.size === 0) {
+      setRevealedCells(new Set([topic.columns[0].name]));
+    }
+  }, [topic]);
+
   // Cargar progreso guardado
   useEffect(() => {
     if (topic) {
@@ -80,18 +95,18 @@ export function useStudySession(topic: Topic | null, cards: Card[]): UseStudySes
       saveProgress();
       setCurrentIndex(prev => prev + 1);
       setViewedCards(prev => new Set([...prev, currentIndex + 1]));
-      setRevealedCells(new Set());
+      setRevealedCells(getFirstColumnRevealed());
     }
-  }, [currentIndex, totalCards, saveProgress]);
+  }, [currentIndex, totalCards, saveProgress, getFirstColumnRevealed]);
 
   // Navegar a la tarjeta anterior
   const goToPrevious = useCallback(() => {
     if (currentIndex > 0) {
       saveProgress();
       setCurrentIndex(prev => prev - 1);
-      setRevealedCells(new Set());
+      setRevealedCells(getFirstColumnRevealed());
     }
-  }, [currentIndex, saveProgress]);
+  }, [currentIndex, saveProgress, getFirstColumnRevealed]);
 
   // Ir a una tarjeta especifica
   const goToCard = useCallback((index: number) => {
@@ -99,9 +114,9 @@ export function useStudySession(topic: Topic | null, cards: Card[]): UseStudySes
       saveProgress();
       setCurrentIndex(index);
       setViewedCards(prev => new Set([...prev, index]));
-      setRevealedCells(new Set());
+      setRevealedCells(getFirstColumnRevealed());
     }
-  }, [totalCards, saveProgress]);
+  }, [totalCards, saveProgress, getFirstColumnRevealed]);
 
   // Revelar una celda
   const revealCell = useCallback((columnName: string) => {
@@ -115,21 +130,21 @@ export function useStudySession(topic: Topic | null, cards: Card[]): UseStudySes
     setRevealedCells(new Set(allColumns));
   }, [topic]);
 
-  // Resetear la tarjeta actual
+  // Resetear la tarjeta actual (mantiene primera columna visible)
   const resetCurrentCard = useCallback(() => {
-    setRevealedCells(new Set());
-  }, []);
+    setRevealedCells(getFirstColumnRevealed());
+  }, [getFirstColumnRevealed]);
 
   // Resetear toda la sesion
   const resetSession = useCallback(() => {
     setCurrentIndex(0);
-    setRevealedCells(new Set());
+    setRevealedCells(getFirstColumnRevealed());
     setViewedCards(new Set([0]));
 
     if (topic) {
       storage.clearStudyProgress(topic.id);
     }
-  }, [topic]);
+  }, [topic, getFirstColumnRevealed]);
 
   // Calcular porcentaje de progreso
   const getProgressPercentage = useCallback(() => {
