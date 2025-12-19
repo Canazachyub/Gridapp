@@ -72,10 +72,11 @@ async function apiGet<T>(action: string, params: Record<string, string> = {}): P
 }
 
 async function apiPost<T>(action: string, payload: object): Promise<T> {
+  // Usamos text/plain para evitar CORS preflight con GAS
   const response = await fetchWithTimeout(GAS_URL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain;charset=utf-8',
       'Accept': 'application/json'
     },
     body: JSON.stringify({ action, ...payload })

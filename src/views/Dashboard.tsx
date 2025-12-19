@@ -570,9 +570,9 @@ function TopicCard({
 
       {/* Columnas preview */}
       <div className="flex flex-wrap gap-1 mb-4">
-        {topic.columns.slice(0, 3).map(col => (
+        {topic.columns.slice(0, 3).map((col, idx) => (
           <span
-            key={col.id}
+            key={`${col.id || col.name}-${idx}`}
             className="text-[10px] uppercase font-bold tracking-wider text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded"
           >
             {col.name}
