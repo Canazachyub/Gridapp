@@ -34,10 +34,13 @@ interface AppContextType {
   uncategorizedTopics: FolderTopic[];
   searchResults: SearchResult[];
   isSearching: boolean;
+  // Estado para navegación a tarjeta específica
+  initialCardIndex: number | null;
 
   // Acciones
   loadTopics: () => Promise<void>;
-  selectTopic: (topic: Topic | null) => void;
+  selectTopic: (topic: Topic | null, initialCardIndex?: number) => void;
+  clearInitialCardIndex: () => void;
   setView: (view: ViewType) => void;
   createTopic: (payload: CreateTopicPayload) => Promise<boolean>;
   deleteTopic: (topicName: string) => Promise<boolean>;
@@ -91,6 +94,8 @@ export function AppProvider({ children }: AppProviderProps) {
   const [uncategorizedTopics, setUncategorizedTopics] = useState<FolderTopic[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  // Estado para navegación a tarjeta específica
+  const [initialCardIndex, setInitialCardIndex] = useState<number | null>(null);
 
   // Aplicar modo oscuro al documento
   useEffect(() => {
@@ -133,9 +138,17 @@ export function AppProvider({ children }: AppProviderProps) {
     }
   }, []);
 
-  // Seleccionar topic
-  const selectTopic = useCallback((topic: Topic | null) => {
+  // Seleccionar topic (con índice opcional para navegación directa a tarjeta)
+  const selectTopic = useCallback((topic: Topic | null, cardIndex?: number) => {
     setCurrentTopic(topic);
+    if (cardIndex !== undefined) {
+      setInitialCardIndex(cardIndex);
+    }
+  }, []);
+
+  // Limpiar índice de tarjeta inicial
+  const clearInitialCardIndex = useCallback(() => {
+    setInitialCardIndex(null);
   }, []);
 
   // Cambiar vista
@@ -478,9 +491,12 @@ export function AppProvider({ children }: AppProviderProps) {
     uncategorizedTopics,
     searchResults,
     isSearching,
+    // Estado para navegación a tarjeta específica
+    initialCardIndex,
     // Acciones
     loadTopics,
     selectTopic,
+    clearInitialCardIndex,
     setView,
     createTopic,
     deleteTopic,

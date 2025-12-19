@@ -12,7 +12,7 @@ import { Button } from './ui/Button';
 interface FolderViewProps {
   folder: Folder;
   onBack: () => void;
-  onSelectTopic: (topicName: string) => void;
+  onSelectTopic: (topicName: string, cardIndex?: number) => void;
   searchResults: SearchResult[];
   isSearching: boolean;
   onSearch: (query: string) => Promise<void>;
@@ -58,7 +58,8 @@ export function FolderView({
   }, [onClearSearch]);
 
   const handleResultClick = useCallback((result: SearchResult) => {
-    onSelectTopic(result.topicName);
+    // Pasar el índice de la tarjeta para navegar directamente a ella
+    onSelectTopic(result.topicName, result.cardIndex);
     handleClearSearch();
   }, [onSelectTopic, handleClearSearch]);
 

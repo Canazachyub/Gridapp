@@ -102,11 +102,11 @@ export function Dashboard() {
     setShowCreateFolder(false);
   };
 
-  // Manejar selección de tema desde carpeta
-  const handleSelectTopicFromFolder = useCallback((topicName: string) => {
+  // Manejar selección de tema desde carpeta (con índice opcional para navegación directa)
+  const handleSelectTopicFromFolder = useCallback((topicName: string, cardIndex?: number) => {
     const topic = topics.find(t => t.name === topicName);
     if (topic) {
-      selectTopic(topic);
+      selectTopic(topic, cardIndex);
       setView('study');
     }
   }, [topics, selectTopic, setView]);

@@ -19,13 +19,14 @@ import { Modal } from '../components/ui/Modal';
 // ============================================================================
 
 export function StudyMode() {
-  const { currentTopic, setView } = useApp();
+  const { currentTopic, setView, initialCardIndex, clearInitialCardIndex } = useApp();
 
   const [cards, setCards] = useState<Card[]>([]);
   const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
   const [isIndexOpen, setIsIndexOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [pendingCardIndex, setPendingCardIndex] = useState<number | null>(null);
 
   // Hook de sesion de estudio
   const {
@@ -86,6 +87,25 @@ export function StudyMode() {
 
     loadCards();
   }, [currentTopic]);
+
+  // Capturar el índice inicial de tarjeta (desde búsqueda)
+  useEffect(() => {
+    if (initialCardIndex !== null) {
+      setPendingCardIndex(initialCardIndex);
+      clearInitialCardIndex();
+    }
+  }, [initialCardIndex, clearInitialCardIndex]);
+
+  // Navegar a la tarjeta específica cuando las cards estén cargadas
+  useEffect(() => {
+    if (!loadingCards && pendingCardIndex !== null && cards.length > 0) {
+      // El índice es 0-based, goToCard espera 0-based
+      if (pendingCardIndex >= 0 && pendingCardIndex < cards.length) {
+        goToCard(pendingCardIndex);
+      }
+      setPendingCardIndex(null);
+    }
+  }, [loadingCards, pendingCardIndex, cards.length, goToCard]);
 
   // Volver al dashboard
   const handleBack = useCallback(() => {
