@@ -101,7 +101,7 @@ export function FlipCard({
 
   return (
     <div
-      className="relative w-full h-56 sm:h-72 md:h-80 lg:h-96 cursor-pointer group perspective-1000"
+      className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[28rem] xl:h-[32rem] cursor-pointer group perspective-1000"
       onClick={handleClick}
     >
       <div
@@ -184,14 +184,16 @@ export function FlipCard({
           </div>
 
           {/* Contenido principal */}
-          <div className="flex-1 flex items-center justify-center px-3 sm:px-4 md:px-6 pb-2 sm:pb-4 md:pb-6 overflow-y-auto custom-scrollbar">
-            {type === 'image' ? (
-              <ImageContent content={content} />
-            ) : type === 'formula' ? (
-              <FormulaContent content={content} />
-            ) : (
-              <TextContent content={content} />
-            )}
+          <div className="flex-1 min-h-0 px-3 sm:px-4 md:px-6 pb-2 sm:pb-4 md:pb-6 overflow-y-auto custom-scrollbar">
+            <div className="min-h-full flex items-center justify-center">
+              {type === 'image' ? (
+                <ImageContent content={content} />
+              ) : type === 'formula' ? (
+                <FormulaContent content={content} />
+              ) : (
+                <TextContent content={content} />
+              )}
+            </div>
           </div>
 
           {/* Footer con hint */}
@@ -220,8 +222,20 @@ function TextContent({ content }: { content: string }) {
     );
   }
 
+  // Ajustar tamaño de fuente según la longitud del contenido
+  const getTextSize = () => {
+    const length = content.length;
+    if (length > 200) return 'text-sm sm:text-base md:text-lg lg:text-xl';
+    if (length > 100) return 'text-base sm:text-lg md:text-xl lg:text-2xl';
+    if (length > 50) return 'text-lg sm:text-xl md:text-2xl lg:text-3xl';
+    return 'text-xl sm:text-2xl md:text-3xl lg:text-4xl';
+  };
+
   return (
-    <p className="text-center font-semibold text-slate-800 dark:text-slate-100 text-lg sm:text-xl md:text-2xl lg:text-3xl leading-relaxed">
+    <p className={cn(
+      'text-center font-semibold text-slate-800 dark:text-slate-100 leading-relaxed w-full',
+      getTextSize()
+    )}>
       {content}
     </p>
   );
