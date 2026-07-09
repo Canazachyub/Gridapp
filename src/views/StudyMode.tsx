@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, List, RotateCcw, Keyboard } from 'lucide-react';
+import { ArrowLeft, List, Keyboard, Clock } from 'lucide-react';
 import type { Card, ColumnConfig } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { useStudySession } from '../hooks/useStudySession';
 import { useStudyKeyboard } from '../hooks/useKeyboard';
 import { api } from '../services/api';
-import { cn } from '../utils/helpers';
-import { getGridCols, KEYBOARD_SHORTCUTS } from '../utils/constants';
+import { cn, detectMemoryRole } from '../utils/helpers';
+import { STUDY_MODES, KEYBOARD_SHORTCUTS } from '../utils/constants';
+import type { StudyMode } from '../utils/constants';
 import { IconButton } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
-import { FlipCard } from '../components/FlipCard';
+import { StudyGrid } from '../components/StudyGrid';
 import { IndexSidebar } from '../components/IndexSidebar';
 import { NavigationBar } from '../components/NavigationBar';
 import { Modal } from '../components/ui/Modal';
@@ -34,14 +35,21 @@ export function StudyMode() {
     totalCards,
     currentCard,
     revealedCells,
+    studyMode,
     goToNext,
     goToPrevious,
     goToCard,
-    revealCell,
+    toggleCell,
     revealAllCells,
     resetCurrentCard,
-    resetSession
-  } = useStudySession(currentTopic, cards);
+    setStudyMode
+  } = useStudySession(currentTopic, cards, columns);
+
+  // Extraer metadato de sesión/bloque si existe
+  const metadataColumn = columns.find(col => detectMemoryRole(col.name) === 'metadata');
+  const metadataValue = metadataColumn && currentCard
+    ? currentCard.cells[metadataColumn.name]
+    : null;
 
   // Cargar cards y columnas desde la API
   useEffect(() => {
@@ -52,24 +60,11 @@ export function StudyMode() {
       try {
         if (api.isConfigured()) {
           const response = await api.getCards(currentTopic.name);
-          console.log('=== DEBUG API Response ===');
-          console.log('Full response:', response);
-          console.log('Headers:', response.headers);
-          console.log('Headers count:', response.headers?.length);
-          console.log('Cards:', response.cards);
-          console.log('Cards count:', response.cards?.length);
-          console.log('First header:', response.headers?.[0]);
-          console.log('First card:', response.cards?.[0]);
-          console.log('=========================');
-
           setCards(response.cards || []);
 
-          // Usar las columnas de la respuesta (headers reales de la hoja)
           if (response.headers && response.headers.length > 0) {
-            console.log('Setting columns from headers:', response.headers.length);
             setColumns(response.headers);
           } else {
-            console.log('Fallback to topic columns:', currentTopic.columns?.length);
             setColumns(currentTopic.columns || []);
           }
         } else {
@@ -99,7 +94,6 @@ export function StudyMode() {
   // Navegar a la tarjeta específica cuando las cards estén cargadas
   useEffect(() => {
     if (!loadingCards && pendingCardIndex !== null && cards.length > 0) {
-      // El índice es 0-based, goToCard espera 0-based
       if (pendingCardIndex >= 0 && pendingCardIndex < cards.length) {
         goToCard(pendingCardIndex);
       }
@@ -117,6 +111,11 @@ export function StudyMode() {
     setIsIndexOpen(prev => !prev);
   }, []);
 
+  // Cambiar modo de estudio
+  const handleModeChange = useCallback((mode: StudyMode) => {
+    setStudyMode(mode);
+  }, [setStudyMode]);
+
   // Atajos de teclado
   useStudyKeyboard(
     {
@@ -125,9 +124,12 @@ export function StudyMode() {
       onRevealAll: revealAllCells,
       onReset: resetCurrentCard,
       onToggleIndex: toggleIndex,
-      onEscape: handleBack
+      onEscape: handleBack,
+      onModeLearn: () => handleModeChange('learn'),
+      onModeRecall: () => handleModeChange('recall'),
+      onModeTest: () => handleModeChange('test')
     },
-    !showShortcuts && !loadingCards // Desactivar si modal abierto
+    !showShortcuts && !loadingCards
   );
 
   if (!currentTopic) {
@@ -153,63 +155,100 @@ export function StudyMode() {
     return <EmptyStudyState topicName={currentTopic.name} onBack={handleBack} />;
   }
 
-  // Usar las columnas del estado (cargadas de la API)
-  const gridCols = getGridCols(columns.length);
-
   return (
     <div className="h-screen flex flex-col bg-slate-100 dark:bg-slate-950">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      {/* Header compacto */}
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-2 z-20">
+        <div className="flex items-center justify-between gap-3">
+          {/* Izquierda: volver + título */}
+          <div className="flex items-center gap-2 min-w-0">
             <IconButton
-              icon={<ArrowLeft size={20} />}
+              icon={<ArrowLeft size={18} />}
               onClick={handleBack}
               label="Volver (Esc)"
             />
-            <div>
+            <div className="min-w-0">
               <h1 className="font-bold text-slate-900 dark:text-white text-sm md:text-base line-clamp-1">
-                {currentTopic.name}
+                {currentTopic.displayName || currentTopic.name}
               </h1>
-              <p className="text-xs text-slate-500">Modo estudio</p>
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-500">
+                <span>{currentIndex + 1} / {totalCards}</span>
+                {metadataValue && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span className="flex items-center gap-1 text-primary-600 dark:text-primary-400">
+                      <Clock size={10} />
+                      <span className="line-clamp-1">{metadataValue}</span>
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Atajos */}
+          {/* Centro: selector de modo */}
+          <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+            {STUDY_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => handleModeChange(mode.id)}
+                className={cn(
+                  'px-2.5 py-1 rounded-md text-xs font-medium transition-all',
+                  studyMode === mode.id
+                    ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                )}
+                title={mode.description}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Derecha: acciones */}
+          <div className="flex items-center gap-1">
             <IconButton
               icon={<Keyboard size={18} />}
               onClick={() => setShowShortcuts(true)}
-              label="Ver atajos"
+              label="Atajos"
               className="hidden sm:flex"
             />
-
-            {/* Reiniciar */}
-            <IconButton
-              icon={<RotateCcw size={18} />}
-              onClick={resetSession}
-              label="Reiniciar sesion"
-            />
-
-            {/* Indice */}
             <button
               onClick={toggleIndex}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 isIndexOpen
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
                   : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               )}
             >
-              <List size={18} />
-              <span className="hidden sm:inline">Indice</span>
+              <List size={16} />
+              <span className="hidden sm:inline">Índice</span>
             </button>
           </div>
+        </div>
+
+        {/* Selector de modo en móvil */}
+        <div className="flex sm:hidden items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 mt-2">
+          {STUDY_MODES.map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => handleModeChange(mode.id)}
+              className={cn(
+                'flex-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all',
+                studyMode === mode.id
+                  ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              )}
+            >
+              {mode.label}
+            </button>
+          ))}
         </div>
       </header>
 
       {/* Area principal */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden min-h-0">
         {/* Sidebar de indice */}
         <IndexSidebar
           isOpen={isIndexOpen}
@@ -223,37 +262,26 @@ export function StudyMode() {
         {/* Area de tarjetas */}
         <div
           className={cn(
-            'h-full overflow-y-auto p-4 md:p-8',
-            'flex items-center justify-center',
+            'h-full overflow-y-auto p-3 sm:p-4 md:p-6',
             'bg-gradient-to-br from-slate-50 to-slate-100',
             'dark:from-slate-950 dark:to-slate-900'
           )}
           onClick={() => isIndexOpen && setIsIndexOpen(false)}
         >
           {currentCard && columns.length > 0 && (
-            <div className={cn('grid gap-4 md:gap-6 w-full max-w-6xl mx-auto', gridCols)}>
-              {columns.map((col, colIndex) => {
-                const cellContent = currentCard.cells[col.name] || '';
-                const isRevealed = revealedCells.has(col.name);
-
-                return (
-                  <FlipCard
-                    key={`card-${currentCard.id}-col-${colIndex}`}
-                    label={col.name}
-                    type={col.type || 'text'}
-                    content={cellContent}
-                    colorIndex={colIndex}
-                    isRevealed={isRevealed}
-                    onReveal={() => revealCell(col.name)}
-                  />
-                );
-              })}
+            <div className="w-full h-full max-w-7xl mx-auto">
+              <StudyGrid
+                card={currentCard}
+                columns={columns}
+                revealedCells={revealedCells}
+                onToggleCell={toggleCell}
+              />
             </div>
           )}
         </div>
       </div>
 
-      {/* Barra de navegacion */}
+      {/* Barra de navegacion compacta */}
       <NavigationBar
         currentIndex={currentIndex}
         totalCards={totalCards}
@@ -289,7 +317,7 @@ function EmptyStudyState({ topicName, onBack }: EmptyStudyStateProps) {
           <List className="w-10 h-10 text-slate-400" />
         </div>
         <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
-          Tema vacio
+          Tema vacío
         </h2>
         <p className="text-slate-500 mb-6">
           "{topicName}" no tiene tarjetas. Agrega algunas para empezar a estudiar.

@@ -132,7 +132,7 @@ export function FolderCard({
               className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 truncate flex items-center gap-1"
             >
               <span className={cn('w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full flex-shrink-0', colors.bg)} />
-              {topic.name}
+              {topic.displayName || topic.name}
             </div>
           ))}
           {folder.topics.length > 3 && (

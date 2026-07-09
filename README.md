@@ -222,6 +222,14 @@ Almacena metadatos de cada tema:
 | lat-suf  | Ejemplo     | formula     | 3            |
 | lat-suf  | Imagen      | image       | 4            |
 
+### Hoja de Índice (`ÍNDICE`)
+Permite importar temas desde un Excel estructurado. Opcional; si existe, enriquece los temas con nombre visible y número de flashcards:
+
+| CLASE             | TEMA            | NÚMERO DE FLASHCARDS |
+|-------------------|-----------------|----------------------|
+| Clase_01_DISNEA   | Disnea          | 13                   |
+| Clase_02_EDEMA    | Edema           | 14                   |
+
 ### Hojas de Temas
 Cada tema es una hoja separada:
 
@@ -247,15 +255,26 @@ Cada tema es una hoja separada:
 - Vista previa antes de guardar
 - Importar desde CSV (opcional)
 
-### Modo Estudio (Grid Oclusivo)
-- Navegación por diapositivas (una fila a la vez)
-- Tarjetas con animación flip 3D
+### Modo Estudio (Grid Oclusivo / Memorización)
+- Cuadrícula adaptable tipo Bento que aprovecha el espacio de pantalla
+- Detección automática de roles de memorización por nombre de columna:
+  - `Concepto`, `Patología`, `Término` → Concepto clave
+  - `Pregunta`, `Flashcard` → Pregunta de active recall
+  - `Respuesta`, `Resumen`, `Validación` → Respuesta / validación
+  - `Nemotecnia`, `Anclaje` → Nemotecnia
+  - `Palabra Clave` → Palabra clave
+  - `Imagen` → Imagen
+  - `Bloque / Hora / Sesión` → Metadato (se muestra en el header)
+- Modos de estudio: **Aprender**, **Active Recall**, **Examen**
+- Tiles vacíos se ocultan automáticamente
+- Imágenes por URL con fallback si no cargan
 - Índice lateral desplegable
 - Barra de progreso
 - Atajos de teclado:
   - `←` / `→`: Navegar entre filas
   - `Espacio`: Revelar todas las tarjetas
   - `R`: Resetear tarjetas
+  - `1` / `2` / `3`: Cambiar modo de estudio
   - `I`: Abrir/cerrar índice
   - `Esc`: Volver al dashboard
 

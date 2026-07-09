@@ -65,9 +65,12 @@ export function Dashboard() {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
   // Filtrar topics
-  const filteredTopics = topics.filter(topic =>
-    topic.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTopics = topics.filter(topic => {
+    const query = searchQuery.toLowerCase();
+    const nameMatch = topic.name.toLowerCase().includes(query);
+    const displayMatch = topic.displayName?.toLowerCase().includes(query) || false;
+    return nameMatch || displayMatch;
+  });
 
   // Manejar estudio
   const handleStudy = (topic: Topic) => {
@@ -463,7 +466,7 @@ function TopicCard({
 
       {/* Titulo */}
       <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5 sm:mb-2 line-clamp-1">
-        {topic.name}
+        {topic.displayName || topic.name}
       </h3>
 
       {/* Info */}

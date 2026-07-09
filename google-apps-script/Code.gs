@@ -26,8 +26,11 @@ const CONFIG = {
   // Nombre de la hoja de carpetas
   FOLDERS_SHEET_NAME: '_folders',
 
+  // Nombre de la hoja indice (formato Excel exportado: CLASE, TEMA, NÚMERO DE FLASHCARDS)
+  INDEX_SHEET_NAME: 'ÍNDICE',
+
   // Version de la API
-  API_VERSION: '1.1.0'
+  API_VERSION: '1.2.0'
 };
 
 // ============================================================================
@@ -199,13 +202,16 @@ function getTopics() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const sheets = ss.getSheets();
 
+  // Leer índice si existe (formato Excel exportado)
+  const indexMap = readIndexSheet() || {};
+
   const topics = [];
 
   sheets.forEach(sheet => {
     const name = sheet.getName();
 
-    // Ignorar hojas de configuracion/sistema
-    if (name.startsWith('_')) return;
+    // Ignorar hojas de configuracion/sistema e indice
+    if (name.startsWith('_') || name === CONFIG.INDEX_SHEET_NAME) return;
 
     const lastRow = sheet.getLastRow();
     const lastCol = sheet.getLastColumn();
@@ -219,10 +225,18 @@ function getTopics() {
     // Obtener configuracion de columnas
     const columnConfig = getColumnConfigForTopic(name);
 
+    // Si existe en el índice, usar displayName y cardCount del índice
+    const indexInfo = indexMap[name] || {};
+    const displayName = indexInfo.displayName || name;
+    const cardCount = indexInfo.cardCount !== null && !isNaN(indexInfo.cardCount)
+      ? indexInfo.cardCount
+      : Math.max(0, lastRow - 1);
+
     topics.push({
       id: name.toLowerCase().replace(/\s+/g, '-'),
       name: name,
-      cardCount: Math.max(0, lastRow - 1), // Restar header
+      displayName: displayName,
+      cardCount: cardCount,
       columns: headers.map((h, index) => ({
         name: h,
         type: columnConfig[h] || 'text',
@@ -761,6 +775,50 @@ function testConnection() {
 }
 
 // ============================================================================
+// FUNCIONES DE ÍNDICE (FORMATO EXCEL)
+// ============================================================================
+
+/**
+ * Lee la hoja ÍNDICE y devuelve un mapa de sheetName -> { displayName, cardCount }
+ * Formato esperado: CLASE | TEMA | NÚMERO DE FLASHCARDS
+ */
+function readIndexSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const indexSheet = ss.getSheetByName(CONFIG.INDEX_SHEET_NAME);
+
+  if (!indexSheet) return null;
+
+  const lastRow = indexSheet.getLastRow();
+  if (lastRow <= 1) return {};
+
+  const data = indexSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+  const indexMap = {};
+
+  data.forEach(row => {
+    const sheetName = row[0];
+    const displayName = row[1];
+    const cardCount = row[2];
+
+    if (sheetName) {
+      indexMap[String(sheetName).trim()] = {
+        displayName: displayName ? String(displayName).trim() : null,
+        cardCount: cardCount ? parseInt(cardCount, 10) : null
+      };
+    }
+  });
+
+  return indexMap;
+}
+
+/**
+ * Determina si existe la hoja ÍNDICE con el formato del Excel
+ */
+function hasIndexSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  return ss.getSheetByName(CONFIG.INDEX_SHEET_NAME) !== null;
+}
+
+// ============================================================================
 // FUNCIONES DE CARPETAS (FOLDERS)
 // ============================================================================
 
@@ -793,8 +851,8 @@ function ensureFoldersSheet() {
  * Obtener todas las carpetas con sus temas
  */
 function getFolders() {
-  const foldersSheet = ensureFoldersSheet();
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const foldersSheet = ensureFoldersSheet();
 
   const lastRow = foldersSheet.getLastRow();
 
@@ -822,14 +880,35 @@ function getFolders() {
     });
   }
 
-  // Obtener todos los temas para contar cards
+  // Si no hay carpetas definidas pero existe hoja ÍNDICE, crear carpeta por defecto
+  if (Object.keys(foldersMap).length === 0 && hasIndexSheet()) {
+    const indexMap = readIndexSheet() || {};
+    const indexTopics = Object.keys(indexMap);
+
+    if (indexTopics.length > 0) {
+      foldersMap['index-default'] = {
+        id: 'index-default',
+        name: 'FISIOPATOLOGÍA',
+        topics: indexTopics
+      };
+    }
+  }
+
+  // Obtener todos los temas para contar cards y display names
   const sheets = ss.getSheets();
   const topicCards = {};
+  const topicDisplayNames = {};
+  const indexMap = readIndexSheet() || {};
 
   sheets.forEach(sheet => {
     const name = sheet.getName();
-    if (name.startsWith('_')) return;
-    topicCards[name] = Math.max(0, sheet.getLastRow() - 1);
+    if (name.startsWith('_') || name === CONFIG.INDEX_SHEET_NAME) return;
+
+    const indexInfo = indexMap[name] || {};
+    topicCards[name] = indexInfo.cardCount !== null && !isNaN(indexInfo.cardCount)
+      ? indexInfo.cardCount
+      : Math.max(0, sheet.getLastRow() - 1);
+    topicDisplayNames[name] = indexInfo.displayName || name;
   });
 
   // Construir respuesta de carpetas
@@ -839,6 +918,7 @@ function getFolders() {
     topicCount: folder.topics.length,
     topics: folder.topics.map(topicName => ({
       name: topicName,
+      displayName: topicDisplayNames[topicName] || topicName,
       cardCount: topicCards[topicName] || 0
     }))
   }));
@@ -852,10 +932,11 @@ function getFolders() {
   const uncategorizedTopics = [];
   sheets.forEach(sheet => {
     const name = sheet.getName();
-    if (name.startsWith('_')) return;
+    if (name.startsWith('_') || name === CONFIG.INDEX_SHEET_NAME) return;
     if (!assignedTopics.has(name)) {
       uncategorizedTopics.push({
         name: name,
+        displayName: topicDisplayNames[name] || name,
         cardCount: topicCards[name] || 0
       });
     }

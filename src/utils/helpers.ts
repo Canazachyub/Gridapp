@@ -205,3 +205,89 @@ export function downloadJson(data: unknown, filename: string): void {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ============================================================================
+// DETECCIÓN DE ROLES DE MEMORIZACIÓN
+// ============================================================================
+
+export type MemoryRole =
+  | 'concept'
+  | 'question'
+  | 'answer'
+  | 'mnemonic'
+  | 'image'
+  | 'keyword'
+  | 'metadata'
+  | 'generic';
+
+/**
+ * Normaliza un nombre de columna para comparación
+ */
+export function normalizeColumnName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Detecta el rol de memorización de una columna según su nombre
+ */
+export function detectMemoryRole(columnName: string): MemoryRole {
+  const normalized = normalizeColumnName(columnName);
+
+  const matchers: Record<MemoryRole, string[]> = {
+    concept: ['concepto', 'termino', 'term', 'patologia', 'tema', 'topico', 'sujeto'],
+    question: ['pregunta', 'flashcard', 'flash', 'cuestion', 'interrogante'],
+    answer: ['respuesta', 'resumen', 'validacion', 'micro', 'explicacion', 'definicion'],
+    mnemonic: ['nemotecnia', 'mnemotecnia', 'anclaje', 'mnemonico', 'truco', 'asociacion'],
+    image: ['imagen', 'foto', 'imagenurl', 'imagenlink', 'fotourl', 'figura', 'diagrama'],
+    keyword: ['palabraclave', 'clave', 'keyword'],
+    metadata: ['bloque', 'hora', 'sesion', 'bloquehorasesion', 'modulo', 'unidad', 'tema'],
+    generic: []
+  };
+
+  for (const [role, keywords] of Object.entries(matchers) as [MemoryRole, string[]][]) {
+    if (role === 'generic') continue;
+    if (keywords.some(k => normalized.includes(k))) return role;
+  }
+
+  return 'generic';
+}
+
+/**
+ * Determina si un texto parece ser una URL de imagen
+ */
+export function looksLikeImageUrl(text: string): boolean {
+  if (!text) return false;
+  const trimmed = text.trim();
+  return (
+    /^https?:\/\//i.test(trimmed) &&
+    /\.(jpg|jpeg|png|gif|webp|svg|bmp|avif)(\?.*)?$/i.test(trimmed)
+  );
+}
+
+/**
+ * Ordena columnas por prioridad de rol de memorización
+ */
+export function sortColumnsByMemoryRole<T extends { name: string }>(
+  columns: T[]
+): T[] {
+  const rolePriority: Record<MemoryRole, number> = {
+    question: 1,
+    answer: 2,
+    concept: 3,
+    keyword: 4,
+    mnemonic: 5,
+    image: 6,
+    generic: 7,
+    metadata: 8
+  };
+
+  return [...columns].sort((a, b) => {
+    const roleA = detectMemoryRole(a.name);
+    const roleB = detectMemoryRole(b.name);
+    return rolePriority[roleA] - rolePriority[roleB];
+  });
+}

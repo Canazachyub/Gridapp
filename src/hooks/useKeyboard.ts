@@ -73,23 +73,29 @@ export interface StudyKeyboardActions {
   onReset: () => void;
   onToggleIndex: () => void;
   onEscape: () => void;
+  onModeLearn?: () => void;
+  onModeRecall?: () => void;
+  onModeTest?: () => void;
 }
 
 export function useStudyKeyboard(
   actions: StudyKeyboardActions,
   enabled: boolean = true
 ): void {
-  useKeyboard(
-    {
-      arrowright: actions.onNext,
-      arrowleft: actions.onPrevious,
-      ' ': actions.onRevealAll,  // Espacio
-      'r': actions.onReset,
-      'i': actions.onToggleIndex,
-      'escape': actions.onEscape
-    },
-    { enabled }
-  );
+  const shortcuts: KeyboardShortcuts = {
+    arrowright: actions.onNext,
+    arrowleft: actions.onPrevious,
+    ' ': actions.onRevealAll,  // Espacio
+    'r': actions.onReset,
+    'i': actions.onToggleIndex,
+    'escape': actions.onEscape
+  };
+
+  if (actions.onModeLearn) shortcuts['1'] = actions.onModeLearn;
+  if (actions.onModeRecall) shortcuts['2'] = actions.onModeRecall;
+  if (actions.onModeTest) shortcuts['3'] = actions.onModeTest;
+
+  useKeyboard(shortcuts, { enabled });
 }
 
 // ============================================================================

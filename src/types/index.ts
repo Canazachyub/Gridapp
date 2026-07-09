@@ -32,6 +32,7 @@ export interface Card {
 export interface Topic {
   id: string;
   name: string;
+  displayName?: string;
   cardCount: number;
   columns: ColumnConfig[];
   lastModified?: string;
@@ -49,6 +50,7 @@ export interface Topic {
 
 export interface FolderTopic {
   name: string;
+  displayName?: string;
   cardCount: number;
 }
 

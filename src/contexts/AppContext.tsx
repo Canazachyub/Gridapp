@@ -14,6 +14,7 @@ import type {
 } from '../types';
 import { api } from '../services/api';
 import { storage } from '../services/storage';
+import { demoTopic } from '../data/demoTopic';
 
 // ============================================================================
 // TIPOS DEL CONTEXTO
@@ -475,6 +476,14 @@ export function AppProvider({ children }: AppProviderProps) {
     loadTopics();
     loadFolders();
   }, [loadTopics, loadFolders]);
+
+  // Inyectar tema demo en modo offline si no hay temas
+  useEffect(() => {
+    if (!isLoading && topics.length === 0 && !api.isConfigured()) {
+      setTopics([demoTopic]);
+      storage.saveTopicsToCache([demoTopic]);
+    }
+  }, [isLoading, topics.length]);
 
   const value: AppContextType = {
     // Estado

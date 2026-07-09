@@ -324,7 +324,7 @@ function TopicCard({ topic, onSelect }: TopicCardProps) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-            {topic.name}
+            {topic.displayName || topic.name}
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {topic.cardCount} tarjeta{topic.cardCount !== 1 ? 's' : ''}
