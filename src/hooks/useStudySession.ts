@@ -69,6 +69,7 @@ export function useStudySession(
             .map(c => c.name)
         );
       case 'test':
+      case 'classic':
         return new Set(
           effectiveColumns
             .filter(c => detectMemoryRole(c.name) === 'question')

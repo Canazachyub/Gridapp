@@ -34,12 +34,13 @@ export const COLUMN_TYPE_COLORS = {
 // CONFIGURACION DE ROLES DE MEMORIZACION
 // ============================================================================
 
-export type StudyMode = 'learn' | 'recall' | 'test';
+export type StudyMode = 'learn' | 'recall' | 'test' | 'classic';
 
 export const STUDY_MODES: { id: StudyMode; label: string; description: string }[] = [
   { id: 'learn', label: 'Aprender', description: 'Todo el contenido visible' },
   { id: 'recall', label: 'Active Recall', description: 'Solo concepto y pregunta visibles' },
-  { id: 'test', label: 'Examen', description: 'Solo la pregunta visible' }
+  { id: 'test', label: 'Examen', description: 'Solo la pregunta visible' },
+  { id: 'classic', label: 'Óptimo', description: 'Flashcard clásica: pregunta y respuesta' }
 ];
 
 export const MEMORY_ROLE_COLORS = {
@@ -126,6 +127,7 @@ export const KEYBOARD_SHORTCUTS = {
     modeLearn: { key: '1', description: 'Modo Aprender' },
     modeRecall: { key: '2', description: 'Modo Active Recall' },
     modeTest: { key: '3', description: 'Modo Examen' },
+    modeClassic: { key: '4', description: 'Modo Óptimo (flashcard clásica)' },
     exit: { key: 'Esc', description: 'Volver al dashboard' }
   },
   dashboard: {

@@ -11,6 +11,7 @@ import type { StudyMode } from '../utils/constants';
 import { IconButton } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { StudyGrid } from '../components/StudyGrid';
+import { ClassicFlashcard } from '../components/ClassicFlashcard';
 import { IndexSidebar } from '../components/IndexSidebar';
 import { NavigationBar } from '../components/NavigationBar';
 import { Modal } from '../components/ui/Modal';
@@ -28,6 +29,7 @@ export function StudyMode() {
   const [isIndexOpen, setIsIndexOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [pendingCardIndex, setPendingCardIndex] = useState<number | null>(null);
+  const [classicFlipped, setClassicFlipped] = useState(false);
 
   // Hook de sesion de estudio
   const {
@@ -50,6 +52,11 @@ export function StudyMode() {
   const metadataValue = metadataColumn && currentCard
     ? currentCard.cells[metadataColumn.name]
     : null;
+
+  // Resetear flip clásico al cambiar de tarjeta
+  useEffect(() => {
+    setClassicFlipped(false);
+  }, [currentIndex]);
 
   // Cargar cards y columnas desde la API
   useEffect(() => {
@@ -114,20 +121,36 @@ export function StudyMode() {
   // Cambiar modo de estudio
   const handleModeChange = useCallback((mode: StudyMode) => {
     setStudyMode(mode);
+    setClassicFlipped(false);
   }, [setStudyMode]);
+
+  // Voltear tarjeta en modo clásico
+  const handleClassicFlip = useCallback(() => {
+    setClassicFlipped(prev => !prev);
+  }, []);
+
+  // Revelar todo: en modo clásico, voltear la tarjeta
+  const handleRevealAll = useCallback(() => {
+    if (studyMode === 'classic') {
+      setClassicFlipped(true);
+    } else {
+      revealAllCells();
+    }
+  }, [studyMode, revealAllCells]);
 
   // Atajos de teclado
   useStudyKeyboard(
     {
       onNext: goToNext,
       onPrevious: goToPrevious,
-      onRevealAll: revealAllCells,
+      onRevealAll: handleRevealAll,
       onReset: resetCurrentCard,
       onToggleIndex: toggleIndex,
       onEscape: handleBack,
       onModeLearn: () => handleModeChange('learn'),
       onModeRecall: () => handleModeChange('recall'),
-      onModeTest: () => handleModeChange('test')
+      onModeTest: () => handleModeChange('test'),
+      onModeClassic: () => handleModeChange('classic')
     },
     !showShortcuts && !loadingCards
   );
@@ -270,12 +293,23 @@ export function StudyMode() {
         >
           {currentCard && columns.length > 0 && (
             <div className="w-full h-full max-w-7xl mx-auto">
-              <StudyGrid
-                card={currentCard}
-                columns={columns}
-                revealedCells={revealedCells}
-                onToggleCell={toggleCell}
-              />
+              {studyMode === 'classic' ? (
+                <ClassicFlashcardView
+                  card={currentCard}
+                  columns={columns}
+                  isFlipped={classicFlipped}
+                  onFlip={handleClassicFlip}
+                  onNext={goToNext}
+                  onPrevious={goToPrevious}
+                />
+              ) : (
+                <StudyGrid
+                  card={currentCard}
+                  columns={columns}
+                  revealedCells={revealedCells}
+                  onToggleCell={toggleCell}
+                />
+              )}
             </div>
           )}
         </div>
@@ -297,6 +331,57 @@ export function StudyMode() {
         onClose={() => setShowShortcuts(false)}
       />
     </div>
+  );
+}
+
+// ============================================================================
+// VISTA FLASHCARD CLÁSICA
+// ============================================================================
+
+interface ClassicFlashcardViewProps {
+  card: Card;
+  columns: ColumnConfig[];
+  isFlipped: boolean;
+  onFlip: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+}
+
+function ClassicFlashcardView({
+  card,
+  columns,
+  isFlipped,
+  onFlip,
+  onNext,
+  onPrevious
+}: ClassicFlashcardViewProps) {
+  const questionCol = columns.find(c => detectMemoryRole(c.name) === 'question');
+  const answerCol = columns.find(c => detectMemoryRole(c.name) === 'answer');
+
+  const question = questionCol ? card.cells[questionCol.name] : '';
+  const answer = answerCol ? card.cells[answerCol.name] : '';
+
+  if (!questionCol || !answerCol) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-lg">
+          <p className="text-slate-600 dark:text-slate-400">
+            El modo Óptimo requiere columnas <strong>Pregunta</strong> y <strong>Respuesta</strong>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ClassicFlashcard
+      question={question}
+      answer={answer}
+      isFlipped={isFlipped}
+      onFlip={onFlip}
+      onNext={onNext}
+      onPrevious={onPrevious}
+    />
   );
 }
 

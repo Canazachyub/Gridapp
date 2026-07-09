@@ -76,6 +76,7 @@ export interface StudyKeyboardActions {
   onModeLearn?: () => void;
   onModeRecall?: () => void;
   onModeTest?: () => void;
+  onModeClassic?: () => void;
 }
 
 export function useStudyKeyboard(
@@ -94,6 +95,7 @@ export function useStudyKeyboard(
   if (actions.onModeLearn) shortcuts['1'] = actions.onModeLearn;
   if (actions.onModeRecall) shortcuts['2'] = actions.onModeRecall;
   if (actions.onModeTest) shortcuts['3'] = actions.onModeTest;
+  if (actions.onModeClassic) shortcuts['4'] = actions.onModeClassic;
 
   useKeyboard(shortcuts, { enabled });
 }
