@@ -355,6 +355,11 @@ export function AppProvider({ children }: AppProviderProps) {
       setFolders(response.folders);
       setUncategorizedTopics(response.uncategorized);
     } catch (err) {
+      // No mostrar errores de timeout/aborto en consola; las carpetas son opcionales
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.warn('Timeout loading folders (non-critical)');
+        return;
+      }
       console.error('Error loading folders:', err);
     }
   }, []);

@@ -22,7 +22,7 @@ import type {
 const GAS_URL = import.meta.env.VITE_GAS_URL || '';
 
 // Timeout para las peticiones (ms)
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 60000;
 
 // ============================================================================
 // CLIENTE HTTP
