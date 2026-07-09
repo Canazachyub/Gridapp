@@ -28,10 +28,10 @@ export function ClassicFlashcard({
   onPrevious
 }: ClassicFlashcardProps) {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-4">
-      {/* Tarjeta clásica */}
+    <div className="w-full h-full flex flex-col items-center justify-center p-2 sm:p-4">
+      {/* Tarjeta clásica - ocupa la mayor parte del área disponible */}
       <div
-        className="relative w-full max-w-4xl aspect-[16/10] sm:aspect-[2/1] max-h-[60vh] cursor-pointer group perspective-1000"
+        className="relative w-full h-full max-w-6xl cursor-pointer group perspective-1000"
         onClick={onFlip}
       >
         <div
@@ -65,7 +65,7 @@ export function ClassicFlashcard({
             </div>
 
             {/* Contenido */}
-            <div className="relative z-10 w-full overflow-y-auto custom-scrollbar flex items-center justify-center">
+            <div className="relative z-10 w-full flex-1 overflow-y-auto custom-scrollbar flex items-center justify-center px-4 sm:px-8 md:px-16 py-4">
               <p className={cn(
                 'text-center text-white font-semibold leading-relaxed',
                 getTextSize(question)
@@ -110,7 +110,7 @@ export function ClassicFlashcard({
             </div>
 
             {/* Contenido */}
-            <div className="flex-1 min-h-0 px-4 sm:px-8 md:px-12 py-4 overflow-y-auto custom-scrollbar flex items-center justify-center">
+            <div className="flex-1 min-h-0 px-4 sm:px-8 md:px-16 py-4 overflow-y-auto custom-scrollbar flex items-center justify-center">
               <ClassicAnswerContent content={answer} />
             </div>
 
@@ -125,17 +125,17 @@ export function ClassicFlashcard({
       </div>
 
       {/* Controles rápidos */}
-      <div className="mt-4 sm:mt-6 flex items-center gap-3">
+      <div className="mt-2 sm:mt-4 flex items-center gap-2 sm:gap-3 flex-shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); onPrevious(); }}
-          className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           ← Anterior
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onFlip(); }}
           className={cn(
-            'px-5 py-2 rounded-lg text-sm font-bold text-white shadow-lg transition-transform active:scale-95',
+            'px-4 sm:px-5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold text-white shadow-lg transition-transform active:scale-95',
             'bg-gradient-to-r',
             isFlipped ? MEMORY_ROLE_COLORS.question.base : MEMORY_ROLE_COLORS.answer.base
           )}
@@ -144,7 +144,7 @@ export function ClassicFlashcard({
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onNext(); }}
-          className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           Siguiente →
         </button>
