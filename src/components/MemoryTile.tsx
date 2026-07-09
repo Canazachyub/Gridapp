@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { ColumnConfig } from '../types';
 import { cn, detectMemoryRole, looksLikeImageUrl, type MemoryRole } from '../utils/helpers';
+import { formatCellContent } from '../utils/formatText';
 import { MEMORY_ROLE_COLORS, MEMORY_ROLE_LABELS } from '../utils/constants';
 
 // ============================================================================
@@ -286,54 +287,17 @@ function TileContent({
     length > 60 ? 'text-base sm:text-lg' :
     'text-lg sm:text-xl md:text-2xl';
 
-  // Detectar viñetas y formatear
-  const hasBullets = content.includes('•') || content.includes('- ') || content.includes('\n');
-
   return (
     <div className="h-full flex items-center justify-center">
-      {hasBullets ? (
-        <div
-          className={cn(
-            'text-slate-800 dark:text-slate-100 leading-relaxed w-full',
-            textSize
-          )}
-          dangerouslySetInnerHTML={{ __html: formatBulletText(content) }}
-        />
-      ) : (
-        <p className={cn(
-          'text-center font-semibold text-slate-800 dark:text-slate-100 leading-relaxed w-full',
+      <div
+        className={cn(
+          'text-slate-800 dark:text-slate-100 leading-relaxed w-full',
           textSize
-        )}>
-          {content}
-        </p>
-      )}
+        )}
+        dangerouslySetInnerHTML={{ __html: formatCellContent(content) }}
+      />
     </div>
   );
-}
-
-// ============================================================================
-// FORMATEO DE TEXTO CON VIÑETAS
-// ============================================================================
-
-function formatBulletText(text: string): string {
-  const lines = text.split('\n').filter(line => line.trim());
-  if (lines.length <= 1) return `<p class="text-center font-semibold">${escapeHtml(text)}</p>`;
-
-  const items = lines.map(line => {
-    const trimmed = line.trim().replace(/^[\s•\-\*]+/, '');
-    return `<li class="mb-1.5">${escapeHtml(trimmed)}</li>`;
-  }).join('');
-
-  return `<ul class="list-disc pl-4 sm:pl-5 space-y-1 font-medium">${items}</ul>`;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 // ============================================================================

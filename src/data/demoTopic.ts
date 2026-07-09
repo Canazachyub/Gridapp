@@ -20,7 +20,7 @@ const demoCards: Card[] = [
     cells: {
       'Patología': 'DERMATITIS ESPONGIÓTICA (ECCEMA)',
       'Pregunta': '¿Cuál es el hallazgo histopatológico característico que consiste en edema intercelular epidérmico?',
-      'Respuesta': 'Espongiosis: edema entre queratinocitos que los separa, dando aspecto de esponja. En fase aguda forma vesículas intraepidérmicas.',
+      'Respuesta': 'Espongiosis: edema entre queratinocitos que los separa, dando aspecto de esponja.\n*Fase aguda:* formación de ==vesículas intraepidérmicas==.\n_Clave_: separación de queratinocitos por edema.',
       'Palabra Clave': 'ESPONGIOSIS',
       'Nemotecnia': '"EsPONGeosis" → la epidermis se hincha como una esponja llena de agua. Visual: esponja amarilla entre células de la piel.',
       'Imagen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Acute_eczema_-_spongiosis_-_very_high_mag.jpg/640px-Acute_eczema_-_spongiosis_-_very_high_mag.jpg'
@@ -31,8 +31,8 @@ const demoCards: Card[] = [
     rowIndex: 3,
     cells: {
       'Patología': 'PSORIASIS VULGAR',
-      'Pregunta': '¿Cuáles son las 3 hallazgas clínicas clásicas de la psoriasis en placa?',
-      'Respuesta': '• Eritema de base\n• Placas bien delimitadas\n• Escamas blanquecinas plateadas\n• Signo de la película de estearina\n• Signo de la lámpara de Petróleo',
+      'Pregunta': '¿Cuáles son las *3 hallazgos clínicos clásicos* de la psoriasis en placa?',
+      'Respuesta': '• Eritema de base _intenso_\n• Placas bien delimitadas\n• Escamas ==blanquecinas plateadas==\n• Signo de la película de estearina\n• Signo de la lámpara de Petróleo',
       'Palabra Clave': 'PARAKERATOSIS',
       'Nemotecnia': '"PSO-RIASIS = PLATA ROJA" → placas ROJAS con escamas PLATEADAS. Visual: una moneda de plata sobre piel roja.',
       'Imagen': ''

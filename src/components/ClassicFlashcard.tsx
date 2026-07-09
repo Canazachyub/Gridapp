@@ -1,5 +1,6 @@
 import { HelpCircle, CheckCircle2, RotateCcw } from 'lucide-react';
 import { cn } from '../utils/helpers';
+import { formatCellContent } from '../utils/formatText';
 import { MEMORY_ROLE_COLORS } from '../utils/constants';
 
 // ============================================================================
@@ -66,12 +67,17 @@ export function ClassicFlashcard({
 
             {/* Contenido */}
             <div className="relative z-10 w-full flex-1 overflow-y-auto custom-scrollbar flex items-center justify-center px-4 sm:px-8 md:px-16 py-4">
-              <p className={cn(
-                'text-center text-white font-semibold leading-relaxed',
-                getTextSize(question)
-              )}>
-                {question || 'Sin pregunta'}
-              </p>
+              <div
+                className={cn(
+                  'text-center text-white font-semibold leading-relaxed w-full',
+                  getTextSize(question)
+                )}
+                dangerouslySetInnerHTML={{
+                  __html: question && question.trim()
+                    ? formatCellContent(question)
+                    : '<p class="text-center font-semibold">Sin pregunta</p>'
+                }}
+              />
             </div>
 
             {/* Hint */}
@@ -164,27 +170,14 @@ function ClassicAnswerContent({ content }: { content: string }) {
     );
   }
 
-  const hasBullets = content.includes('•') || content.includes('- ') || content.includes('\n');
-
-  if (hasBullets) {
-    return (
-      <div
-        className={cn(
-          'text-slate-800 dark:text-slate-100 leading-relaxed w-full',
-          getTextSize(content)
-        )}
-        dangerouslySetInnerHTML={{ __html: formatBulletText(content) }}
-      />
-    );
-  }
-
   return (
-    <p className={cn(
-      'text-center font-semibold text-slate-800 dark:text-slate-100 leading-relaxed w-full',
-      getTextSize(content)
-    )}>
-      {content}
-    </p>
+    <div
+      className={cn(
+        'text-slate-800 dark:text-slate-100 leading-relaxed w-full',
+        getTextSize(content)
+      )}
+      dangerouslySetInnerHTML={{ __html: formatCellContent(content) }}
+    />
   );
 }
 
@@ -198,27 +191,6 @@ function getTextSize(text: string): string {
   if (length > 150) return 'text-base sm:text-lg md:text-xl';
   if (length > 60) return 'text-lg sm:text-xl md:text-2xl';
   return 'text-xl sm:text-2xl md:text-3xl';
-}
-
-function formatBulletText(text: string): string {
-  const lines = text.split('\n').filter(line => line.trim());
-  if (lines.length <= 1) return `<p class="text-center font-semibold">${escapeHtml(text)}</p>`;
-
-  const items = lines.map(line => {
-    const trimmed = line.trim().replace(/^[\s•\-\*]+/, '');
-    return `<li class="mb-2">${escapeHtml(trimmed)}</li>`;
-  }).join('');
-
-  return `<ul class="list-disc pl-5 sm:pl-6 space-y-1 font-medium text-left">${items}</ul>`;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 export default ClassicFlashcard;

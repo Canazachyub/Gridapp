@@ -265,18 +265,36 @@ Cada tema es una hoja separada:
   - `Palabra Clave` → Palabra clave
   - `Imagen` → Imagen
   - `Bloque / Hora / Sesión` → Metadato (se muestra en el header)
-- Modos de estudio: **Aprender**, **Active Recall**, **Examen**
+- Modos de estudio: **Aprender**, **Active Recall**, **Examen**, **Óptimo** (flashcard clásica anverso/reverso)
 - Tiles vacíos se ocultan automáticamente
 - Imágenes por URL con fallback si no cargan
 - Índice lateral desplegable
 - Barra de progreso
 - Atajos de teclado:
   - `←` / `→`: Navegar entre filas
-  - `Espacio`: Revelar todas las tarjetas
+  - `Espacio`: Revelar todas las tarjetas / voltear flashcard
   - `R`: Resetear tarjetas
-  - `1` / `2` / `3`: Cambiar modo de estudio
+  - `1` / `2` / `3` / `4`: Cambiar modo de estudio
   - `I`: Abrir/cerrar índice
   - `Esc`: Volver al dashboard
+
+### Formato de Texto en las Tarjetas
+Cualquier celda de texto admite un marcado ligero tipo Markdown. Google Sheets / Excel conservan estos caracteres tal cual, y la app los renderiza automáticamente:
+
+| Marcador | Resultado | Ejemplo en la celda | Cómo se ve |
+|----------|-----------|---------------------|------------|
+| `*texto*` | **Negrita** | `*Fase aguda:* formación...` | **Fase aguda:** formación... |
+| `_texto_` | <u>Subrayado</u> | `_Clave_: separación...` | <u>Clave</u>: separación... |
+| `==texto==` | ==Resaltado amarillo== | `==vesículas intraepidérmicas==` | fondo amarillo |
+| `` `texto` `` | Código / monoespaciado | `` `CD4+` `` | `CD4+` |
+
+**Reglas de comportamiento:**
+
+1. **Saltos de línea**: se respetan exactamente como están en la celda. Si en Excel/Google Sheets presionaste `Alt+Enter` o hay varias líneas, la app las mostrará en líneas separadas.
+2. **Listas con viñetas**: cualquier línea que empiece con `•`, `-` o `*` (seguido de espacio) se convierte en viñeta. Si la mayoría de líneas de una celda son viñetas, se renderiza como lista completa.
+3. **Marcadores dentro de viñetas**: funcionan igual. Ejemplo: `- Eritema de base _intenso_` muestra una viñeta con subrayado.
+4. **Orden de procesado**: primero código, luego resaltado, luego negrita y luego subrayado. Esto evita que un marcador "rompa" a otro.
+5. **Seguridad**: el contenido se escapa antes de formatear, por lo que etiquetas HTML escritas a mano (`<b>`, etc.) se muestran como texto plano en lugar de ejecutarse.
 
 ### Subida de Imágenes
 - Drag & drop
