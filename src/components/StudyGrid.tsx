@@ -1,6 +1,6 @@
 import type { Card, ColumnConfig } from '../types';
 import { MemoryTile } from './MemoryTile';
-import { detectMemoryRole, sortColumnsByMemoryRole, type MemoryRole, cn } from '../utils/helpers';
+import { detectMemoryRole, sortColumnsByMemoryRole, type MemoryRole } from '../utils/helpers';
 
 // ============================================================================
 // TIPOS
@@ -16,25 +16,6 @@ interface StudyGridProps {
 interface PositionedColumn extends ColumnConfig {
   role: MemoryRole;
 }
-
-// ============================================================================
-// CLASES DE SPAN POR ROL
-// Prioridad visual: pregunta y respuesta arriba, concepto abajo, resto al final.
-// ============================================================================
-
-const ROLE_SPAN_CLASSES: Record<MemoryRole, string> = {
-  // Pregunta y respuesta: tiles estándar, altos para leer bien
-  question: 'col-span-1 min-h-[140px] sm:min-h-[160px]',
-  answer: 'col-span-1 min-h-[140px] sm:min-h-[160px]',
-  // Concepto: en desktop ocupa 1 columna pero 2 filas de alto para darle presencia
-  concept: 'col-span-1 md:col-span-2 lg:col-span-1 lg:row-span-2 min-h-[140px] sm:min-h-[160px]',
-  // Palabra clave, nemotecnia, imagen y genéricos: tiles estándar
-  keyword: 'col-span-1 min-h-[140px] sm:min-h-[160px]',
-  mnemonic: 'col-span-1 min-h-[140px] sm:min-h-[160px]',
-  image: 'col-span-1 min-h-[140px] sm:min-h-[160px]',
-  metadata: 'col-span-1 min-h-[140px] sm:min-h-[160px]',
-  generic: 'col-span-1 min-h-[140px] sm:min-h-[160px]'
-};
 
 // ============================================================================
 // COMPONENTE PRINCIPAL
@@ -60,7 +41,7 @@ export function StudyGrid({
   );
 
   return (
-    <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 auto-rows-min md:auto-rows-fr content-start">
+    <div className="w-full h-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 content-start auto-rows-min">
       {positionedColumns.map((col, index) => (
         <GridTile
           key={col.name}
@@ -68,7 +49,6 @@ export function StudyGrid({
           content={card.cells[col.name] || ''}
           revealed={revealedCells.has(col.name)}
           onToggle={onToggleCell}
-          className={ROLE_SPAN_CLASSES[col.role]}
           index={index}
         />
       ))}
@@ -85,14 +65,13 @@ interface GridTileProps {
   content: string;
   revealed: boolean;
   onToggle?: (columnName: string, revealed: boolean) => void;
-  className?: string;
   index: number;
 }
 
-function GridTile({ column, content, revealed, onToggle, className, index }: GridTileProps) {
+function GridTile({ column, content, revealed, onToggle, index }: GridTileProps) {
   return (
     <div
-      className={cn('animate-fade-in', className)}
+      className="animate-fade-in min-h-[160px] sm:min-h-[180px]"
       style={{ animationDelay: `${index * 40}ms` }}
     >
       <MemoryTile
