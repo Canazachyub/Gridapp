@@ -291,10 +291,13 @@ Cualquier celda de texto admite un marcado ligero tipo Markdown. Google Sheets /
 **Reglas de comportamiento:**
 
 1. **Saltos de línea**: se respetan exactamente como están en la celda. Si en Excel/Google Sheets presionaste `Alt+Enter` o hay varias líneas, la app las mostrará en líneas separadas.
-2. **Listas con viñetas**: cualquier línea que empiece con `•`, `-` o `*` (seguido de espacio) se convierte en viñeta. Si la mayoría de líneas de una celda son viñetas, se renderiza como lista completa.
-3. **Marcadores dentro de viñetas**: funcionan igual. Ejemplo: `- Eritema de base _intenso_` muestra una viñeta con subrayado.
-4. **Orden de procesado**: primero código, luego resaltado, luego negrita y luego subrayado. Esto evita que un marcador "rompa" a otro.
-5. **Seguridad**: el contenido se escapa antes de formatear, por lo que etiquetas HTML escritas a mano (`<b>`, etc.) se muestran como texto plano en lugar de ejecutarse.
+2. **Listas con viñetas al inicio de línea**: cualquier línea que empiece con `•`, `-` o `*` (seguido de espacio) se convierte en viñeta. Si la mayoría de líneas de una celda son viñetas, se renderiza como lista completa.
+3. **Viñetas "•" como separadores inline**: si una celda contiene 2 o más caracteres `•` dentro del mismo párrafo, la app divide el texto por esos `•` y genera una lista limpia, eliminando saltos de línea internos. Ejemplo:
+   - Celda: `• Síndrome... pulmonar. • Extravasamiento... pulmonares. • Compromete... gaseoso.`
+   - Render: tres viñetas bien formateadas.
+4. **Marcadores dentro de viñetas**: funcionan igual. Ejemplo: `- Eritema de base _intenso_` muestra una viñeta con subrayado.
+5. **Orden de procesado**: primero código, luego resaltado, luego negrita y luego subrayado. Esto evita que un marcador "rompa" a otro.
+6. **Seguridad**: el contenido se escapa antes de formatear, por lo que etiquetas HTML escritas a mano (`<b>`, etc.) se muestran como texto plano en lugar de ejecutarse.
 
 ### Subida de Imágenes
 - Drag & drop

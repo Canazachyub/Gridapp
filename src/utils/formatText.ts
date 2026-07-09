@@ -10,6 +10,8 @@
 //
 // Además se respetan los saltos de línea del Excel/Google Sheets.
 // Las líneas que empiecen con "•", "-" o "*" se convierten en lista.
+// Si una celda usa "•" como separador dentro de un párrafo, también se
+// convierte en lista, normalizando los saltos de línea internos.
 // ============================================================================
 
 export interface TextFormatRules {
@@ -90,21 +92,37 @@ export function parseInlineMarkdown(
 /**
  * Formatea el contenido completo de una celda:
  * - Respeta saltos de línea.
- * - Detecta listas por viñetas.
+ * - Detecta listas por viñetas al inicio de línea.
+ * - Detecta viñetas "•" usadas como separadores dentro de un párrafo.
  * - Aplica negrita, subrayado y resaltado según marcadores.
  */
 export function formatCellContent(text: string): string {
   if (!text || text.trim().length === 0) return '';
 
+  // CASO 1: el usuario usó "•" como separador dentro del texto (inline)
+  // Ejemplo: "• Síndrome... pulmonar. • Extravasamiento... • Compromete..."
+  if (hasInlineBulletSeparator(text)) {
+    const items = text
+      .split('•')
+      .map(part => normalizeBulletPart(part))
+      .filter(part => part.length > 0)
+      .map(part => `<li class="mb-1.5">${parseInlineMarkdown(escapeHtml(part))}</li>`)
+      .join('');
+
+    if (items) {
+      return `<ul class="list-disc pl-4 sm:pl-5 space-y-1 font-medium text-left">${items}</ul>`;
+    }
+  }
+
   const lines = text.split('\n');
 
-  // Si solo hay una línea sin viñetas, devolvemos un párrafo centrado
+  // CASO 2: una sola línea sin viñetas al inicio
   const nonEmptyLines = lines.filter(line => line.trim());
   if (nonEmptyLines.length === 1 && !isBulletLine(nonEmptyLines[0])) {
     return `<p class="text-center font-semibold">${parseInlineMarkdown(escapeHtml(text))}</p>`;
   }
 
-  // Detectar si la mayoría de líneas son viñetas
+  // CASO 3: la mayoría de líneas comienzan con viñeta
   const bulletLinesCount = nonEmptyLines.filter(isBulletLine).length;
   const mostlyBullets = bulletLinesCount >= nonEmptyLines.length / 2 && bulletLinesCount > 0;
 
@@ -116,7 +134,7 @@ export function formatCellContent(text: string): string {
     return `<ul class="list-disc pl-4 sm:pl-5 space-y-1 font-medium text-left">${items}</ul>`;
   }
 
-  // Texto con saltos de línea pero sin ser lista mayoritaria
+  // CASO 4: texto con saltos de línea mezclado, alguna línea puede ser viñeta
   const paragraphs = nonEmptyLines.map(line => {
     const trimmed = line.trim();
     if (isBulletLine(trimmed)) {
@@ -132,6 +150,29 @@ export function formatCellContent(text: string): string {
   }
 
   return `<div class="space-y-1">${paragraphs}</div>`;
+}
+
+/**
+ * Detecta si el texto usa "•" como separador de viñetas en línea.
+ * Requiere al menos dos viñetas para evitar falsos positivos.
+ */
+function hasInlineBulletSeparator(text: string): boolean {
+  const bulletCount = (text.match(/•/g) || []).length;
+  return bulletCount >= 2;
+}
+
+/**
+ * Normaliza un fragmento de viñeta inline:
+ * - Quita saltos de línea internos (que suelen ser cortes de celda).
+ * - Colapsa espacios múltiples.
+ * - Quita guiones o asteriscos iniciales si el separador era "• - texto".
+ */
+function normalizeBulletPart(part: string): string {
+  return part
+    .replace(/\r?\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^[\-\*]\s*/, '');
 }
 
 /**

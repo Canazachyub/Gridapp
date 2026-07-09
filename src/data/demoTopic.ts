@@ -49,6 +49,18 @@ const demoCards: Card[] = [
       'Nemotecnia': '"4F del ACNÉ" → Folículo tapado, Fango sebáceo, Flora (C. acnes), Fuego inflamatorio.',
       'Imagen': ''
     }
+  },
+  {
+    id: 4,
+    rowIndex: 5,
+    cells: {
+      'Patología': 'EDEMA AGUDO DE PULMÓN',
+      'Pregunta': '¿Qué es el edema agudo de pulmón?',
+      'Respuesta': '• Síndrome cardiorrespiratorio por acúmulo anormal y súbito de líquido en intersticio y alveolo pulmonar. • Extravasamiento desde capilares pulmonares. • Compromete intercambio gaseoso.',
+      'Palabra Clave': 'EDEMA PULMONAR',
+      'Nemotecnia': '"EAP = Estás Ahogado por Pulmones llenos de líquido".',
+      'Imagen': ''
+    }
   }
 ];
 
