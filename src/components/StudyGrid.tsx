@@ -6,6 +6,7 @@ import {
   looksLikeImageUrl,
   type MemoryRole
 } from '../utils/helpers';
+import { cn } from '../utils/helpers';
 
 // ============================================================================
 // TIPOS
@@ -23,49 +24,80 @@ interface PositionedColumn extends ColumnConfig {
 }
 
 // ============================================================================
-// LÓGICA DE TAMAÑO BENTO (dinámico según rol + contenido)
+// LÓGICA DE DISTRIBUCIÓN BENTO PERFECTA
 // ============================================================================
 
-type TileSize = 'hero' | 'wide' | 'tall' | 'normal';
-
-// Clases estáticas (literales) para que Tailwind las incluya en el build.
-// En móvil (< sm) todo es 1 columna; la asimetría bento aparece desde sm.
-const SIZE_CLASSES: Record<TileSize, string> = {
-  hero: 'sm:col-span-2 sm:row-span-2',
-  wide: 'sm:col-span-2',
-  tall: 'sm:row-span-2',
-  normal: ''
-};
+/**
+ * Determina las clases del contenedor según el número total de tarjetas.
+ * Esto evita columnas vacías y crea una distribución Bento perfecta de 100% de ancho por fila.
+ */
+function getContainerGridClass(totalCount: number): string {
+  switch (totalCount) {
+    case 1:
+      return 'grid-cols-1 max-w-2xl';
+    case 2:
+      return 'grid-cols-1 sm:grid-cols-2 max-w-4xl';
+    case 3:
+      return 'grid-cols-1 md:grid-cols-3 max-w-6xl';
+    case 4:
+      return 'grid-cols-1 sm:grid-cols-2 max-w-5xl';
+    case 5:
+      // Sistema de 6 columnas: Fila 1 (3 items x 2 cols = 6), Fila 2 (2 items x 3 cols = 6)
+      return 'grid-cols-1 md:grid-cols-6 max-w-6xl';
+    case 6:
+      return 'grid-cols-1 md:grid-cols-3 max-w-6xl';
+    case 7:
+      // Sistema de 6 columnas: Fila 1 (3 x 2 cols), Fila 2 (2 x 3 cols), Fila 3 (2 x 3 cols)
+      return 'grid-cols-1 md:grid-cols-6 max-w-6xl';
+    default:
+      return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 max-w-7xl';
+  }
+}
 
 /**
- * Decide el tamaño de cada tile según su rol de memorización y la cantidad
- * de contenido. Así el grid se adapta al contenido de cada tarjeta en lugar
- * de usar celdas de tamaño uniforme.
+ * Asigna la cantidad de columnas span a cada casilla para balancear la cuadrícula sin huecos.
  */
-function getTileSize(
+function getTileSpanClasses(
+  index: number,
+  totalCount: number,
   role: MemoryRole,
-  contentLength: number,
   isImage: boolean
-): TileSize {
-  if (isImage) return 'tall';
-
-  switch (role) {
-    case 'answer':
-      // La respuesta/validación suele ser la más rica → protagonista
-      return contentLength > 160 ? 'hero' : 'wide';
-    case 'question':
-      return contentLength > 120 ? 'wide' : 'normal';
-    case 'mnemonic':
-      return contentLength > 140 ? 'wide' : 'normal';
-    case 'concept':
-    case 'keyword':
-      return contentLength > 180 ? 'wide' : 'normal';
-    default:
-      // Genérico: crece con la longitud del texto
-      if (contentLength > 220) return 'hero';
-      if (contentLength > 110) return 'wide';
-      return 'normal';
+): string {
+  if (totalCount === 1 || totalCount === 2) {
+    return 'col-span-1';
   }
+
+  if (totalCount === 3) {
+    return 'md:col-span-1';
+  }
+
+  if (totalCount === 4) {
+    return 'sm:col-span-1';
+  }
+
+  if (totalCount === 5) {
+    // 5 elementos en un grid de 6 columnas:
+    // Fila 1 (índices 0, 1, 2): 2 columnas cada uno -> (3x2 = 6 columnas, fila completa)
+    // Fila 2 (índices 3, 4): 3 columnas cada uno -> (2x3 = 6 columnas, fila completa)
+    if (index < 3) {
+      return 'md:col-span-2';
+    }
+    return 'md:col-span-3';
+  }
+
+  if (totalCount === 6) {
+    return 'md:col-span-1';
+  }
+
+  if (totalCount === 7) {
+    if (index < 3) return 'md:col-span-2';
+    return 'md:col-span-3';
+  }
+
+  // Para 8+ tarjetas
+  if (isImage) return 'sm:col-span-2 lg:col-span-2';
+  if (role === 'answer' || role === 'question') return 'sm:col-span-2';
+  return 'col-span-1';
 }
 
 // ============================================================================
@@ -79,7 +111,6 @@ export function StudyGrid({
   onToggleCell
 }: StudyGridProps) {
   // Detectar roles, filtrar vacías y ocultar metadatos (se muestran en el header)
-  // Prioridad visual: 1. Pregunta, 2. Respuesta, 3. Concepto, 4. Palabra clave, 5. Nemotecnia, 6. Imagen, 7. Genérico
   const positionedColumns: PositionedColumn[] = sortColumnsByMemoryRole(
     columns
       .filter(col => {
@@ -91,19 +122,15 @@ export function StudyGrid({
       .map(col => ({ ...col, role: detectMemoryRole(col.name) }))
   );
 
+  const totalCount = positionedColumns.length;
+  const containerGridClass = getContainerGridClass(totalCount);
+
   return (
-    <div
-      className={
-        'grid w-full min-h-full ' +
-        'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ' +
-        'auto-rows-[minmax(150px,auto)] grid-flow-row-dense ' +
-        'gap-3 sm:gap-4'
-      }
-    >
+    <div className={cn('w-full mx-auto grid gap-3 sm:gap-5 pb-6', containerGridClass)}>
       {positionedColumns.map((col, index) => {
         const content = card.cells[col.name] || '';
         const isImage = col.type === 'image' || looksLikeImageUrl(content);
-        const size = getTileSize(col.role, content.trim().length, isImage);
+        const spanClass = getTileSpanClasses(index, totalCount, col.role, isImage);
 
         return (
           <GridTile
@@ -113,7 +140,8 @@ export function StudyGrid({
             revealed={revealedCells.has(col.name)}
             onToggle={onToggleCell}
             index={index}
-            sizeClass={SIZE_CLASSES[size]}
+            sizeClass={spanClass}
+            isImage={isImage}
           />
         );
       })}
@@ -132,6 +160,7 @@ interface GridTileProps {
   onToggle?: (columnName: string, revealed: boolean) => void;
   index: number;
   sizeClass: string;
+  isImage: boolean;
 }
 
 function GridTile({
@@ -140,11 +169,16 @@ function GridTile({
   revealed,
   onToggle,
   index,
-  sizeClass
+  sizeClass,
+  isImage
 }: GridTileProps) {
   return (
     <div
-      className={`animate-fade-in min-h-[150px] ${sizeClass}`}
+      className={cn(
+        'animate-fade-in transition-all duration-300',
+        isImage ? 'min-h-[240px] sm:min-h-[280px]' : 'min-h-[160px] sm:min-h-[190px]',
+        sizeClass
+      )}
       style={{ animationDelay: `${index * 40}ms` }}
     >
       <MemoryTile

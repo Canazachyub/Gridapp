@@ -76,16 +76,17 @@ export function FolderCard({
 
         {/* Menu de opciones */}
         {onDelete && (
-          <div className="relative">
+          <div className="relative z-10">
             <button
               onClick={handleMenuClick}
+              title="Opciones de carpeta"
               className={cn(
-                'p-1.5 sm:p-2 rounded-lg sm:opacity-0 sm:group-hover:opacity-100',
-                'hover:bg-slate-100 dark:hover:bg-slate-700',
+                'p-1.5 sm:p-2 rounded-lg opacity-80 hover:opacity-100',
+                'bg-slate-100/80 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600',
                 'transition-all'
               )}
             >
-              <MoreVertical className="w-4 h-4 text-slate-400" />
+              <MoreVertical className="w-4 h-4 text-slate-600 dark:text-slate-300" />
             </button>
 
             {showMenu && (

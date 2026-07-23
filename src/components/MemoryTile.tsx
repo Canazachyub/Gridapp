@@ -82,10 +82,10 @@ export function MemoryTile({
     <>
       <div
         className={cn(
-          'relative w-full h-full min-h-[140px] rounded-2xl overflow-hidden',
+          'relative w-full h-full min-h-[150px] rounded-2xl overflow-hidden',
           'cursor-pointer select-none',
           'transition-all duration-300 ease-out',
-          'shadow-lg hover:shadow-xl',
+          'shadow-md hover:shadow-xl hover:-translate-y-0.5',
           'group',
           className
         )}
@@ -109,20 +109,20 @@ export function MemoryTile({
 
           {/* Badge del rol */}
           <div className="absolute top-3 left-3 right-3 flex justify-center">
-            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-[10px] sm:text-xs font-extrabold uppercase tracking-wider shadow-sm">
               {label}
             </span>
           </div>
 
           {/* Icono central */}
-          <div className="relative z-10 mt-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+          <div className="relative z-10 mt-3">
+            <div className="w-11 h-11 sm:w-13 sm:h-13 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-inner">
+              <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
           </div>
 
           {/* Hint */}
-          <p className="relative z-10 mt-3 text-white/80 text-xs sm:text-sm font-medium">
+          <p className="relative z-10 mt-2.5 text-white/90 text-xs sm:text-sm font-medium tracking-wide">
             Toca para revelar
           </p>
         </div>
@@ -142,9 +142,9 @@ export function MemoryTile({
           <div className={cn('h-1.5 bg-gradient-to-r', colors.base)} />
 
           {/* Header con badge */}
-          <div className="px-3 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+          <div className="px-3.5 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
             <span className={cn(
-              'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
+              'inline-block px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider',
               colors.label
             )}>
               {label}
@@ -155,8 +155,9 @@ export function MemoryTile({
                   e.stopPropagation();
                   setLightboxOpen(true);
                 }}
-                className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 aria-label="Ampliar imagen"
+                title="Ampliar imagen"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
@@ -164,7 +165,7 @@ export function MemoryTile({
           </div>
 
           {/* Contenido */}
-          <div className="flex-1 min-h-0 p-3 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 min-h-0 p-3.5 overflow-y-auto custom-scrollbar flex items-center justify-center">
             <TileContent
               content={content}
               type={column.type}
@@ -177,8 +178,8 @@ export function MemoryTile({
           </div>
 
           {/* Footer */}
-          <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
-            <p className="text-center text-[10px] sm:text-xs text-slate-400 font-medium">
+          <div className="px-3 py-1.5 bg-slate-50/80 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 text-center">
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium">
               Toca para ocultar
             </p>
           </div>

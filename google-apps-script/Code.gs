@@ -855,18 +855,23 @@ function getFolders() {
   const foldersSheet = ensureFoldersSheet();
 
   const lastRow = foldersSheet.getLastRow();
+  let hasUserAction = false;
 
   // Estructura para carpetas
   const foldersMap = {};
 
   // Leer asignaciones de carpetas
   if (lastRow > 1) {
+    hasUserAction = true;
     const data = foldersSheet.getRange(2, 1, lastRow - 1, 3).getValues();
 
     data.forEach(row => {
       const folderId = row[0];
       const folderName = row[1];
       const topicName = row[2];
+
+      // Ignorar centinelas del sistema
+      if (folderId.startsWith('_')) return;
 
       if (!foldersMap[folderId]) {
         foldersMap[folderId] = {
@@ -876,12 +881,14 @@ function getFolders() {
         };
       }
 
-      foldersMap[folderId].topics.push(topicName);
+      if (topicName && topicName !== '__none__') {
+        foldersMap[folderId].topics.push(topicName);
+      }
     });
   }
 
-  // Si no hay carpetas definidas pero existe hoja ÍNDICE, crear carpeta por defecto
-  if (Object.keys(foldersMap).length === 0 && hasIndexSheet()) {
+  // Si no hay carpetas definidas, NO hay interacción previa de carpetas y existe hoja ÍNDICE, crear carpeta por defecto
+  if (!hasUserAction && Object.keys(foldersMap).length === 0 && hasIndexSheet()) {
     const indexMap = readIndexSheet() || {};
     const indexTopics = Object.keys(indexMap);
 
@@ -977,8 +984,8 @@ function createFolder(payload) {
     }
   }
 
-  // Crear entrada placeholder (carpeta vacia)
-  // La carpeta se crea realmente cuando se le asigna un tema
+  // Crear entrada placeholder para registrar que la estructura de carpetas fue inicializada
+  foldersSheet.appendRow(['_init_' + folderId, folderName, '__none__']);
 
   return successResponse({
     id: folderId,
@@ -998,24 +1005,24 @@ function deleteFolder(folderId) {
 
   const foldersSheet = ensureFoldersSheet();
   const lastRow = foldersSheet.getLastRow();
-
-  if (lastRow <= 1) {
-    return errorResponse('Folder not found', 404);
-  }
-
-  // Eliminar todas las filas de esta carpeta (de abajo hacia arriba)
-  const data = foldersSheet.getRange(2, 1, lastRow - 1, 1).getValues();
   let deleted = 0;
 
-  for (let i = data.length - 1; i >= 0; i--) {
-    if (data[i][0] === folderId) {
-      foldersSheet.deleteRow(i + 2);
-      deleted++;
+  if (lastRow > 1) {
+    // Eliminar todas las filas de esta carpeta (de abajo hacia arriba)
+    const data = foldersSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+
+    for (let i = data.length - 1; i >= 0; i--) {
+      if (data[i][0] === folderId) {
+        foldersSheet.deleteRow(i + 2);
+        deleted++;
+      }
     }
   }
 
-  if (deleted === 0) {
-    return errorResponse('Folder not found', 404);
+  // Registrar borrado centinela si era virtual o no tenía filas físicas asignadas
+  if (deleted === 0 || lastRow <= 1) {
+    foldersSheet.appendRow(['_deleted_' + folderId, 'Deleted Folder', '__none__']);
+    deleted = 1;
   }
 
   return successResponse({
