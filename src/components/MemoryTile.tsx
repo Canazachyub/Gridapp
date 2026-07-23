@@ -165,7 +165,7 @@ export function MemoryTile({
           </div>
 
           {/* Contenido */}
-          <div className="flex-1 min-h-0 p-3.5 overflow-y-auto custom-scrollbar flex items-center justify-center">
+          <div className="flex-1 min-h-0 p-3.5 sm:p-4 overflow-y-auto custom-scrollbar flex flex-col justify-start">
             <TileContent
               content={content}
               type={column.type}
@@ -223,7 +223,7 @@ function TileContent({
 }: TileContentProps) {
   if (!content || content.trim().length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-slate-400">
+      <div className="w-full my-auto py-4 flex flex-col items-center justify-center text-slate-400">
         <Sparkles className="w-8 h-8 mb-2 opacity-50" />
         <span className="text-sm italic">Sin contenido</span>
       </div>
@@ -233,7 +233,7 @@ function TileContent({
   if (isImage) {
     if (imageError) {
       return (
-        <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center">
+        <div className="w-full my-auto py-4 flex flex-col items-center justify-center text-slate-500 text-center">
           <ImageIcon className="w-10 h-10 mb-2 opacity-40" />
           <p className="text-xs mb-2">No se pudo cargar la imagen</p>
           <a
@@ -250,7 +250,7 @@ function TileContent({
     }
 
     return (
-      <div className="h-full flex items-center justify-center relative">
+      <div className="w-full h-full min-h-[180px] my-auto flex items-center justify-center relative py-1">
         {!imageLoaded && (
           <div className="absolute inset-0 flex items-center justify-center">
             <ImageIcon className="w-8 h-8 text-slate-300 animate-pulse" />
@@ -272,7 +272,7 @@ function TileContent({
 
   if (type === 'formula') {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="w-full my-auto py-2 flex items-center justify-center">
         <div className="font-mono text-base sm:text-lg md:text-xl text-center font-bold text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-800 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 w-full">
           {content}
         </div>
@@ -289,10 +289,10 @@ function TileContent({
     'text-lg sm:text-xl md:text-2xl';
 
   return (
-    <div className="h-full flex items-center justify-center">
+    <div className="w-full my-auto py-1">
       <div
         className={cn(
-          'text-slate-800 dark:text-slate-100 leading-relaxed w-full',
+          'text-slate-800 dark:text-slate-100 leading-relaxed w-full text-left',
           textSize
         )}
         dangerouslySetInnerHTML={{ __html: formatCellContent(content) }}

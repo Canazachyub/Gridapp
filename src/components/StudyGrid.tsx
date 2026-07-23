@@ -176,7 +176,7 @@ function GridTile({
     <div
       className={cn(
         'animate-fade-in transition-all duration-300',
-        isImage ? 'min-h-[240px] sm:min-h-[280px]' : 'min-h-[160px] sm:min-h-[190px]',
+        isImage ? 'min-h-[250px] sm:min-h-[290px]' : 'min-h-[180px] sm:min-h-[210px]',
         sizeClass
       )}
       style={{ animationDelay: `${index * 40}ms` }}
